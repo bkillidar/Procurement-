@@ -2,7 +2,8 @@ import Link from "next/link";
 import { Nav } from "@/components/nav";
 import { hasServerCredentials } from "@/lib/supabase/admin";
 import { loadNotifications } from "@/lib/notification-queries";
-import { lock } from "@/app/unlock/actions";
+import { signOut } from "@/app/login/actions";
+import { getCurrentUser } from "@/lib/auth";
 
 async function unreadCount() {
   if (!hasServerCredentials()) return 0;
@@ -13,8 +14,17 @@ async function unreadCount() {
   }
 }
 
+async function currentEmail() {
+  try {
+    return (await getCurrentUser())?.email ?? "";
+  } catch {
+    return "";
+  }
+}
+
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const unread = await unreadCount();
+  const email = await currentEmail();
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
       <header className="sticky top-0 z-10 border-b border-slate-200 bg-white px-4 pt-3">
@@ -44,11 +54,14 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <div className="min-w-0 flex-1">
             <Nav />
           </div>
-          {process.env.APP_ACCESS_PASSWORD && (
-            <form action={lock} className="shrink-0 pb-2">
-              <button className="rounded-md px-3 py-2 text-sm text-slate-500 hover:bg-slate-100">Lock</button>
-            </form>
-          )}
+          <form action={signOut} className="shrink-0 pb-2">
+            <button
+              title={email ? `Signed in as ${email}` : undefined}
+              className="whitespace-nowrap rounded-md px-3 py-2 text-sm text-slate-500 hover:bg-slate-100"
+            >
+              Sign out
+            </button>
+          </form>
         </div>
       </header>
       <main className="mx-auto max-w-5xl p-4 pb-16">{children}</main>

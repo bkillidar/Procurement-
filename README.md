@@ -4,7 +4,7 @@ Operations and procurement management for a residential real-estate development 
 
 It connects **schedule → task dependencies → material lead times → order dates → vendor follow-up → delivery → downstream construction**, and tells you what is at risk *before* you discover it yourself.
 
-Next.js 16 (App Router) · TypeScript · Tailwind · Supabase (Postgres + Storage) · Vercel.
+Next.js 16 (App Router) · TypeScript · Tailwind · Supabase (Postgres, Auth, Storage) · Vercel. Private: sign-in only, for the people you add.
 
 ## What it does
 | Area | What you get |
@@ -22,7 +22,7 @@ Next.js 16 (App Router) · TypeScript · Tailwind · Supabase (Postgres + Storag
 ## Docs
 - **[docs/SETUP.md](docs/SETUP.md)** – first-time setup (local, Supabase, GitHub, Vercel)
 - **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)** – going live: env vars, Supabase/Vercel settings, backups, checklist
-- **[docs/SECURITY.md](docs/SECURITY.md)** – how data is protected, what is open by design, how to lock the site
+- **[docs/SECURITY.md](docs/SECURITY.md)** – who can sign in, how to add/remove people, how data is protected
 - **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** – architecture, data model, routes, business rules
 - **[docs/QA.md](docs/QA.md)** – manual test checklist for every workflow
 
