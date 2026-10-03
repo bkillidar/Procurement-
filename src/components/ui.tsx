@@ -141,3 +141,24 @@ export function SeverityBadge({ severity }: { severity: string }) {
     </span>
   );
 }
+
+import { PERMIT_STATUS_LABELS, type PermitStatus } from "@/lib/permits";
+
+const PERMIT_STATUS_STYLES: Partial<Record<PermitStatus, string>> = {
+  preparing: "bg-blue-100 text-blue-800",
+  submitted: "bg-indigo-100 text-indigo-800",
+  under_review: "bg-indigo-100 text-indigo-800",
+  additional_info_required: "bg-orange-100 text-orange-800",
+  approved: "bg-green-100 text-green-800",
+  scheduled: "bg-cyan-100 text-cyan-800",
+  complete: "bg-green-100 text-green-800",
+  delayed: "bg-red-100 text-red-800",
+};
+
+export function PermitStatusBadge({ status }: { status: string }) {
+  return (
+    <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${PERMIT_STATUS_STYLES[status as PermitStatus] ?? "bg-slate-100 text-slate-700"}`}>
+      {PERMIT_STATUS_LABELS[status as PermitStatus] ?? status}
+    </span>
+  );
+}

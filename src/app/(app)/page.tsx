@@ -3,6 +3,8 @@ import { hasServerCredentials } from "@/lib/supabase/admin";
 import { loadPortfolio } from "@/lib/queries";
 import { loadItems, type ItemView } from "@/lib/procurement-queries";
 import { getContext } from "@/lib/org";
+import { loadPermits, type PermitView } from "@/lib/permit-queries";
+import { isClosedPermit, permitRiskRank } from "@/lib/permits";
 import { compareIssues, isOpenIssue, ISSUE_TYPE_LABELS } from "@/lib/issues";
 import { daysBetween, dueState, formatDate } from "@/lib/dates";
 import { isPreOrder, isReceived, riskRank, UNCONFIRMED, type ItemStatus } from "@/lib/procurement";
@@ -11,6 +13,7 @@ import {
   DueBadge,
   EmptyState,
   ItemStatusBadge,
+  PermitStatusBadge,
   PriorityBadge,
   ProgressBar,
   RiskBadge,
@@ -23,13 +26,14 @@ export const dynamic = "force-dynamic";
 async function load() {
   try {
     const { db, orgId } = await getContext();
-    const [portfolio, procurement, issueRes] = await Promise.all([
+    const [portfolio, procurement, permitData, issueRes] = await Promise.all([
       loadPortfolio(),
       loadItems(),
+      loadPermits(),
       db.from("issues").select("id, project_id, issue_type, title, severity, status, due_date, opened_on").eq("organization_id", orgId),
     ]);
     if (issueRes.error) throw new Error(issueRes.error.message);
-    return { data: { ...portfolio, items: procurement.items, issues: issueRes.data ?? [] }, error: null };
+    return { data: { ...portfolio, items: procurement.items, permits: permitData.permits, issues: issueRes.data ?? [] }, error: null };
   } catch (e) {
     return { data: null, error: e instanceof Error ? e.message : "Unknown error" };
   }
@@ -57,10 +61,15 @@ export default async function DashboardPage() {
     );
   }
 
-  const { orgName, today, projects, open, items, issues } = data;
+  const { orgName, today, projects, open, items, issues, permits } = data;
   const projectNames = new Map(projects.map((p) => [p.id, p.name]));
   const openIssues = issues.filter((i) => isOpenIssue(i.status)).sort(compareIssues);
+
   const activeIds = new Set(projects.filter((p) => p.status === "active" || p.status === "planning").map((p) => p.id));
+  const livePermits = permits.filter((p) => activeIds.has(p.project_id));
+  const permitAttention = livePermits
+    .filter((p) => p.risk.level !== "none" || p.followUpDue)
+    .sort((a, b) => permitRiskRank(b.risk.level) - permitRiskRank(a.risk.level));
   const liveItems = items.filter((i) => activeIds.has(i.project_id));
   const flagged = liveItems
     .filter((i) => i.risk.level !== "none")
@@ -106,6 +115,7 @@ export default async function DashboardPage() {
             <Stat label="Materials to order" value={toOrder.length} tone={toOrder.length ? "warn" : "ok"} href="/procurement?view=ordering" />
             <Stat label="Awaiting confirmation" value={awaiting.length} tone={awaiting.length ? "warn" : "ok"} href="/procurement?view=awaiting" />
             <Stat label="Open issues" value={openIssues.length} tone={openIssues.length ? "bad" : "ok"} href="/issues" />
+            <Stat label="Permit / utility delays" value={permitAttention.length} tone={permitAttention.length ? "bad" : "ok"} href="/permits?view=attention" />
           </div>
 
           <Section title="Open issues" count={openIssues.length}>
@@ -128,6 +138,14 @@ export default async function DashboardPage() {
                   </li>
                 ))}
               </ul>
+            )}
+          </Section>
+
+          <Section title="Permits & utilities needing attention" count={permitAttention.length}>
+            {permitAttention.length === 0 ? (
+              <p className="p-4 text-sm text-slate-500">No permit or utility delays.</p>
+            ) : (
+              <PermitList permits={permitAttention.slice(0, 8)} />
             )}
           </Section>
 
@@ -231,6 +249,34 @@ function Stat({
     </Link>
   ) : (
     <div className={`${cardClass} p-3`}>{body}</div>
+  );
+}
+
+function PermitList({ permits }: { permits: PermitView[] }) {
+  return (
+    <ul className="divide-y divide-slate-100">
+      {permits.map((p) => (
+        <li key={p.id}>
+          <Link href={`/permits/${p.id}`} className="block space-y-1 p-4 hover:bg-slate-50">
+            <div className="flex items-start justify-between gap-2">
+              <p className="font-medium">{p.item_type}</p>
+              {p.risk.level !== "none" && <RiskBadge level={p.risk.level} />}
+            </div>
+            <p className="text-sm text-slate-500">
+              {p.projectName}
+              {p.agency ? ` · ${p.agency}` : ""}
+            </p>
+            <div className="flex flex-wrap items-center gap-2 text-xs text-slate-600">
+              <PermitStatusBadge status={p.status} />
+              {p.next_follow_up_on && !isClosedPermit(p.status) && <span>Follow up {formatDate(p.next_follow_up_on)}</span>}
+            </div>
+            <p className="text-sm text-slate-700">
+              {p.risk.risks[0]?.message ?? (p.followUpDue ? "A follow-up is due." : "")}
+            </p>
+          </Link>
+        </li>
+      ))}
+    </ul>
   );
 }
 

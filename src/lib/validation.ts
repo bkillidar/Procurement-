@@ -216,3 +216,39 @@ export const replacementSchema = z.object({
   quantity: numberField("Quantity"),
   notes: text(),
 });
+
+export const PERMIT_STATUS_VALUES = [
+  "not_started",
+  "preparing",
+  "submitted",
+  "under_review",
+  "additional_info_required",
+  "approved",
+  "scheduled",
+  "complete",
+  "delayed",
+] as const;
+
+export const permitSchema = z.object({
+  project_id: uuid,
+  item_type: requiredText("Type", 150),
+  agency: text(200),
+  status: z.enum(PERMIT_STATUS_VALUES).default("not_started"),
+  contact_id: optionalUuid,
+  task_id: optionalUuid,
+  reference_number: text(100),
+  submitted_on: dateField,
+  expected_response_date: dateField,
+  next_follow_up_on: dateField,
+  approved_on: dateField,
+  notes: text(),
+});
+
+export const permitFollowUpSchema = z.object({
+  permit_id: uuid,
+  method: z.enum(ITEM_METHODS),
+  result: text(500),
+  next_follow_up_on: dateField,
+  responsible_label: text(100),
+  notes: text(),
+});
