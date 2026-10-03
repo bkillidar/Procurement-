@@ -15,3 +15,5 @@ See **docs/ARCHITECTURE.md** for the architecture, data model and routes.
 | `npm run lint` | Lint |
 | `npm run typecheck` | TypeScript check |
 | `npm test` | Unit tests |
+
+> Connection check: GitHub write access verified.
