@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { loadPortfolio } from "@/lib/queries";
 import { loadDemoProject } from "@/app/actions/demo";
+import { removeDuplicateProjects } from "@/app/actions/projects";
+import { loadRemovableDuplicateIds } from "@/lib/duplicate-queries";
+import { ConfirmButton } from "@/components/confirm-button";
 import { DEMO_PROJECT_PREFIX } from "@/lib/demo";
 import { formatDate } from "@/lib/dates";
 import { cardClass, EmptyState, primaryButton, ProgressBar } from "@/components/ui";
@@ -14,6 +17,7 @@ export default async function ProjectsPage(props: PageProps<"/projects">) {
   const error = typeof sp.error === "string" ? sp.error : undefined;
   const { projects } = await loadPortfolio();
   const hasDemo = projects.some((p) => p.name.startsWith(DEMO_PROJECT_PREFIX));
+  const duplicateCount = (await loadRemovableDuplicateIds()).length;
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -26,6 +30,19 @@ export default async function ProjectsPage(props: PageProps<"/projects">) {
         <p role="alert" className="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-800">
           {error}
         </p>
+      )}
+      {duplicateCount > 0 && (
+        <form action={removeDuplicateProjects} className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm">
+          <p className="mb-2 text-amber-900">
+            {duplicateCount} duplicate project{duplicateCount === 1 ? "" : "s"} found: same name and address with nothing entered on them.
+          </p>
+          <ConfirmButton
+            message={`Delete ${duplicateCount} untouched duplicate project${duplicateCount === 1 ? "" : "s"}? The oldest copy of each is kept.`}
+            className="rounded-md border border-amber-400 bg-white px-3 py-2 text-sm font-medium text-amber-900"
+          >
+            Remove duplicates (keeps the oldest)
+          </ConfirmButton>
+        </form>
       )}
       {projects.length === 0 ? (
         <EmptyState>

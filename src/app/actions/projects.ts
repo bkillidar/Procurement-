@@ -6,6 +6,7 @@ import { z } from "zod";
 import { ensureDefaultTemplates, getContext } from "@/lib/org";
 import { createProjectFromTemplate } from "@/lib/project-create";
 import { purgeDocumentFiles } from "@/lib/storage-cleanup";
+import { loadRemovableDuplicateIds } from "@/lib/duplicate-queries";
 import { firstError, projectSchema } from "@/lib/validation";
 
 function fail(path: string, message: string): never {
@@ -52,4 +53,23 @@ export async function deleteProject(formData: FormData) {
   revalidatePath("/");
   if (error) redirect(`/projects/${id.data}?error=${encodeURIComponent(error)}`);
   redirect("/projects");
+}
+
+/** Removes accidental duplicate projects (untouched copies); the oldest of each group is always kept. */
+export async function removeDuplicateProjects() {
+  let error: string | undefined;
+  try {
+    const ids = await loadRemovableDuplicateIds();
+    const { db, orgId } = await getContext();
+    for (const id of ids) {
+      await purgeDocumentFiles(db, orgId, "project_id", id);
+      const { error: de } = await db.from("projects").delete().eq("id", id).eq("organization_id", orgId);
+      if (de) throw new Error(de.message);
+    }
+  } catch (e) {
+    error = e instanceof Error ? e.message : "Could not remove the duplicates";
+  }
+  revalidatePath("/projects");
+  revalidatePath("/");
+  redirect(error ? `/projects?error=${encodeURIComponent(error)}` : "/projects");
 }
