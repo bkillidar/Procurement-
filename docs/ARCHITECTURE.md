@@ -3,8 +3,9 @@
 ## Shape
 - **One Next.js app** (App Router, TypeScript, Tailwind). Server Components read data; Server Actions write data. No separate API server.
 - **Supabase** is the system of record: Postgres (schema through migrations in `supabase/migrations`) and a private Storage bucket (`documents`).
-- **All database access is server-side** through one client, `src/lib/supabase/admin.ts`, which uses the server-only secret key. Row Level Security is enabled on every table with no policy for the public (browser) key, so the browser cannot read or write data directly. See [SECURITY.md](SECURITY.md).
-- **V1 has no login.** There is one company (`organizations` row, created on first use); every row still carries `organization_id`, so real users, roles and multiple companies can be added later without a data migration (the `org_members`, role helper functions and RLS policies for that already exist). An optional shared password (`APP_ACCESS_PASSWORD`) can lock the whole site.
+- **Private by sign-in.** Supabase Auth (email + password). There is no sign-up screen: the owner allows an email (`allowed_emails`) and creates the user in Supabase; a database trigger refuses accounts for any other email and adds allowed ones to the company (`org_members`). The proxy requires a valid session for every request; see [SECURITY.md](SECURITY.md).
+- **All business data goes through one door.** `getContext()` (`src/lib/org.ts`) checks for a signed-in company member and only then returns the server-only admin client (`src/lib/supabase/admin.ts`). Row Level Security is on for every table with no policy for the browser's public key, as defence in depth. The public key is used only for sign-in and signed uploads.
+- **One company for now.** Every row carries `organization_id`, so more companies and per-person role enforcement can be added without a data migration (roles and RLS helpers already exist).
 - **Business rules are pure TypeScript** in `src/lib`, unit-tested with Vitest, with no database or framework code inside: `procurement.ts` (order-date math and risk), `permits.ts`, `delivery.ts`, `tasks.ts` (dependencies, phase progression), `punch.ts`, `notifications.ts`, `dates.ts`, `validation.ts`, `documents.ts`, `access.ts`.
 - **Risk and notifications are computed on read**, always current, each with a human-readable reason. Only "marked read" is stored.
 - **Uploads go straight from the browser to Storage** through one-time signed URLs (Vercel limits request bodies to ~4.5 MB; phone photos are bigger). Photos are shrunk on the device first. Files are served through one-hour signed links.
@@ -41,7 +42,7 @@ Deliberate deviations from the suggested list:
 | `/documents` | Uploads by project and type |
 | `/vendors`, `/contacts`, `/templates` | Directories and templates |
 | `/notifications`, `/search`, `/activity` | Alerts, search, activity feed |
-| `/unlock` | Password screen (only when `APP_ACCESS_PASSWORD` is set) |
+| `/login` | Sign in (the only page open to signed-out visitors) |
 | `/api/health` | Connectivity check (returns no data) |
 
 ## Prepared for, not built

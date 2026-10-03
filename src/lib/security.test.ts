@@ -30,15 +30,23 @@ describe("secret handling", () => {
     expect(bad).toEqual([]);
   });
 
-  it("the access password is only read on the server", () => {
-    const readers = files.filter((f) => /process\.env\.APP_ACCESS_PASSWORD/.test(f.text)).map((f) => f.file);
-    for (const f of files.filter((x) => readers.includes(x.file))) expect(isClient(f.text)).toBe(false);
+  it("only the data door, the admin module and the health check create the admin client", () => {
+    const users = files.filter((f) => f.text.includes("createAdminClient")).map((f) => f.file.split(path.sep).join("/")).sort();
+    expect(users).toEqual(["app/api/health/route.ts", "lib/org.ts", "lib/supabase/admin.ts"]);
+  });
+
+  it("the data door checks for a signed-in account", () => {
+    const org = files.find((f) => f.file === path.join("lib", "org.ts"))!;
+    expect(org.text).toContain("getCurrentUser");
+    expect(org.text).toContain("org_members");
   });
 });
 
 describe("server/client boundary", () => {
   const serverOnly = [
     "@/lib/supabase/admin",
+    "@/lib/supabase/server",
+    "@/lib/auth",
     "@/lib/org",
     "@/lib/activity",
     "@/lib/project-sync",

@@ -200,12 +200,15 @@ Setup: use a project with some overdue tasks, a flagged material and a permit wi
 - [ ] Upload a photo to a punch item, then delete the item: the photo disappears from the Documents page (and the file is removed from Storage).
 - [ ] Project page → "Delete this project": typing the wrong name refuses; typing the exact name deletes everything, including its uploaded files, and returns to Projects.
 
-### Access password (optional)
-- [ ] With `APP_ACCESS_PASSWORD` set and redeployed: opening any page shows the password screen; a wrong password is refused after a short delay; the right one lets you in for 30 days and returns you to the page you wanted. "Lock" in the menu logs out.
-- [ ] While locked, `/api/health` still returns `{"ok":true}`; direct visits to `/projects`, `/issues` etc. redirect to the password screen.
-- [ ] Remove the variable and redeploy: the site is open again.
+### Sign-in and privacy
+- [ ] Open the site in a private/incognito window: you land on the sign-in page and cannot reach any other page (try /projects, /issues).
+- [ ] A wrong password shows "That email or password isn't right"; the right one lands on the dashboard (or the page you were trying to open).
+- [ ] "Sign out" in the menu returns to the sign-in page, and the back button does not show data.
+- [ ] Both accounts (you and Faris) can sign in on their own phones at the same time.
+- [ ] In Supabase, try Authentication → Users → Add user with an email that is NOT in `allowed_emails`: it is refused ("not allowed to create an account").
+- [ ] `/api/health` works signed out and returns only `{"ok":true}`.
 
 ### Security spot-checks
 - [ ] View the page source or network tab: the secret key never appears.
 - [ ] Supabase security advisor shows only the four RLS helper functions.
-- [ ] Supabase sign-ups are disabled.
+- [ ] Authentication → Users lists only you and Faris.

@@ -1,35 +1,39 @@
 import "server-only";
+import { cache } from "react";
+import { getCurrentUser } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { DEFAULT_TEMPLATES, PHASE_NAMES } from "@/lib/templates/defaults";
 
-// V1 is a single-company app with no login. Every row is still scoped by
-// organization_id, so adding real users and more companies later needs no
-// data migration. The company row is created on first use.
-export async function getOrganization() {
+/**
+ * The one door to business data. Every page, query and action gets its database client from here,
+ * and only after (1) a signed-in account and (2) a membership in the company. Rows are still scoped
+ * by organization_id, so more companies or per-person roles can be added later without migrating data.
+ * Cached per request so the checks run once.
+ */
+export const getContext = cache(async () => {
+  const user = await getCurrentUser();
+  if (!user) throw new Error("You are not signed in.");
+
   const db = createAdminClient();
-  const { data: existing, error } = await db
-    .from("organizations")
-    .select("id, name")
+  const { data: membership, error } = await db
+    .from("org_members")
+    .select("organization_id, role")
+    .eq("user_id", user.id)
     .order("created_at", { ascending: true })
     .limit(1)
     .maybeSingle();
   if (error) throw new Error(error.message);
-  if (existing) return existing;
+  if (!membership) throw new Error("This account does not have access.");
 
-  const { data: created, error: insertError } = await db
+  const { data: org, error: orgError } = await db
     .from("organizations")
-    .insert({ name: "My Company" })
     .select("id, name")
+    .eq("id", membership.organization_id)
     .single();
-  if (insertError) throw new Error(insertError.message);
-  return created;
-}
+  if (orgError) throw new Error(orgError.message);
 
-/** Database client + the company id every query/insert must be scoped to. */
-export async function getContext() {
-  const org = await getOrganization();
-  return { db: createAdminClient(), orgId: org.id as string, orgName: org.name as string };
-}
+  return { db, orgId: org.id as string, orgName: org.name as string, role: membership.role as string, user };
+});
 
 /** Copies the starter templates into the database the first time they are needed. */
 export async function ensureDefaultTemplates() {
