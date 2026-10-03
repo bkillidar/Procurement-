@@ -3,11 +3,14 @@ import { notFound } from "next/navigation";
 import { z } from "zod";
 import { getContext } from "@/lib/org";
 import { loadItems } from "@/lib/procurement-queries";
+import { loadDocuments } from "@/lib/document-queries";
+import { isOpenIssue, ISSUE_STATUS_LABELS } from "@/lib/issues";
 import { formatDate, todayISO } from "@/lib/dates";
 import {
   ITEM_STATUSES,
   ITEM_STATUS_LABELS,
   isPreOrder,
+  isReceived,
   UNCONFIRMED,
   type ItemStatus,
 } from "@/lib/procurement";
@@ -23,7 +26,10 @@ import {
   setItemStatus,
   updateItem,
 } from "@/app/actions/procurement";
+import { createReplacement, receiveDelivery } from "@/app/actions/deliveries";
 import { ConfirmButton } from "@/components/confirm-button";
+import { DocumentList } from "@/components/document-list";
+import { FileUploader } from "@/components/file-uploader";
 import {
   cardClass,
   dangerButton,
@@ -34,6 +40,7 @@ import {
   primaryButton,
   RiskBadge,
   secondaryButton,
+  SeverityBadge,
 } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
@@ -69,6 +76,14 @@ export default async function ItemPage(props: PageProps<"/procurement/[id]">) {
   const { items } = await loadItems();
   const item = items.find((i) => i.id === id);
   if (!item) notFound();
+
+  const [{ data: deliveries }, { data: issues }, docs] = await Promise.all([
+    db.from("deliveries").select("*").eq("organization_id", orgId).eq("procurement_item_id", id).order("received_on", { ascending: false }),
+    db.from("issues").select("id, title, severity, status, due_date").eq("organization_id", orgId).eq("procurement_item_id", id).order("created_at", { ascending: false }),
+    loadDocuments({ procurementItemId: id }),
+  ]);
+  const replacedBy = items.filter((i) => i.replaces_item_id === id);
+  const replaces = item.replaces_item_id ? items.find((i) => i.id === item.replaces_item_id) : undefined;
 
   const [{ data: vendors }, { data: quotes }, { data: followUps }, { data: deps }] = await Promise.all([
     db.from("vendors").select("id, name, phone, email, typical_lead_time_days").eq("organization_id", orgId).order("name"),
@@ -239,6 +254,133 @@ export default async function ItemPage(props: PageProps<"/procurement/[id]">) {
             <button className={secondaryButton}>Update</button>
           </form>
           <p className="text-xs text-slate-500">Changes are recorded in the activity history.</p>
+        </section>
+      )}
+
+
+      {/* Receiving */}
+      {!isPreOrder(status) && !isReceived(status) && (
+        <section className={`${cardClass} space-y-3 p-4`}>
+          <h2 className="font-medium">Receive a delivery</h2>
+          <form action={receiveDelivery} className="space-y-3">
+            <input type="hidden" name="item_id" value={item.id} />
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className={labelClass}>Date received *</label>
+                <input type="date" name="received_on" required defaultValue={today} className={inputClass} />
+              </div>
+              <div>
+                <label className={labelClass}>
+                  Quantity received{item.quantity != null ? ` (ordered ${item.quantity}${item.unit ? ` ${item.unit}` : ""}${Number(item.quantity_received) ? `, ${item.quantity_received} already in` : ""})` : ""}
+                </label>
+                <input name="quantity_received" type="number" step="any" min={0} inputMode="decimal" className={inputClass} placeholder={item.quantity != null ? "Blank = all outstanding" : ""} />
+              </div>
+            </div>
+            <fieldset className="space-y-2 rounded-md border border-slate-200 p-3">
+              <legend className="px-1 text-sm font-medium text-slate-700">Anything wrong?</legend>
+              {(
+                [
+                  ["is_partial", "Partial delivery (more still to come)"],
+                  ["has_damage", "Damaged"],
+                  ["has_missing_items", "Missing components or accessories"],
+                  ["has_incorrect_items", "Wrong product"],
+                  ["needs_replacement", "Replacement / reorder needed"],
+                ] as const
+              ).map(([name, label]) => (
+                <label key={name} className="flex items-center gap-3 py-1 text-base">
+                  <input type="checkbox" name={name} className="h-5 w-5" />
+                  {label}
+                </label>
+              ))}
+              <p className="text-xs text-slate-500">Any problem opens an issue automatically. Add photos right after saving.</p>
+            </fieldset>
+            <div>
+              <label className={labelClass}>Notes</label>
+              <textarea name="notes" rows={2} className={inputClass} />
+            </div>
+            <button className={primaryButton}>Save delivery</button>
+          </form>
+        </section>
+      )}
+
+      {((deliveries ?? []).length > 0 || (issues ?? []).length > 0 || replaces || replacedBy.length > 0) && (
+        <section className={`${cardClass} space-y-4 p-4`}>
+          <h2 className="font-medium">Deliveries and problems</h2>
+          {replaces && (
+            <p className="text-sm">
+              Replacement for{" "}
+              <Link href={`/procurement/${replaces.id}`} className="underline">{replaces.description}</Link>
+            </p>
+          )}
+          {replacedBy.map((r) => (
+            <p key={r.id} className="text-sm">
+              Replaced by <Link href={`/procurement/${r.id}`} className="underline">{r.description}</Link>{" "}
+              <ItemStatusBadge status={r.status} />
+            </p>
+          ))}
+          {(issues ?? []).length > 0 && (
+            <ul className="space-y-2">
+              {(issues ?? []).map((i) => (
+                <li key={i.id}>
+                  <Link href={`/issues/${i.id}`} className="flex items-center justify-between gap-2 rounded-md border border-slate-200 p-3 text-sm hover:bg-slate-50">
+                    <span>
+                      <span className="block font-medium">{i.title}</span>
+                      <span className="text-slate-500">
+                        {ISSUE_STATUS_LABELS[i.status]}
+                        {isOpenIssue(i.status) && i.due_date ? ` · due ${formatDate(i.due_date)}` : ""}
+                      </span>
+                    </span>
+                    <SeverityBadge severity={i.severity} />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+          {(deliveries ?? []).map((d) => {
+            const flags = [
+              d.has_damage && "damaged",
+              d.has_missing_items && "missing items",
+              d.has_incorrect_items && "wrong product",
+              d.needs_replacement && "replacement needed",
+              d.is_partial && "partial",
+            ].filter(Boolean);
+            return (
+              <div key={d.id} id={`delivery-${d.id}`} className="space-y-2 border-t border-slate-100 pt-3 first:border-0 first:pt-0">
+                <p className="text-sm">
+                  <strong>{formatDate(d.received_on)}</strong> · received {d.quantity_received ?? "?"}
+                  {item.unit ? ` ${item.unit}` : ""}
+                  {flags.length > 0 && <span className="text-red-700"> · {flags.join(", ")}</span>}
+                </p>
+                {d.notes && <p className="text-sm text-slate-600">{d.notes}</p>}
+                <FileUploader
+                  projectId={item.project_id}
+                  category="delivery_photo"
+                  links={{ delivery_id: d.id, procurement_item_id: item.id }}
+                  label="📷 Add photos"
+                  accept="image/*"
+                />
+                <DocumentList docs={docs.filter((x) => x.delivery_id === d.id)} back={`/procurement/${item.id}`} />
+              </div>
+            );
+          })}
+          {(deliveries ?? []).some((d) => d.needs_replacement) || status === "problem" ? (
+            <form action={createReplacement} className="space-y-2 border-t border-slate-100 pt-3">
+              <input type="hidden" name="item_id" value={item.id} />
+              <p className="text-sm font-medium">Order a replacement</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={labelClass}>Quantity</label>
+                  <input name="quantity" type="number" step="any" min={0} defaultValue={item.quantity ?? ""} className={inputClass} />
+                </div>
+                <div>
+                  <label className={labelClass}>Notes</label>
+                  <input name="notes" className={inputClass} />
+                </div>
+              </div>
+              <button className={secondaryButton}>Create replacement item</button>
+              <p className="text-xs text-slate-500">Copies the specification, vendor, lead time and required date to a new item.</p>
+            </form>
+          ) : null}
         </section>
       )}
 

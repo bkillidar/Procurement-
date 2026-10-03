@@ -126,3 +126,18 @@ export function ItemStatusBadge({ status }: { status: string }) {
     </span>
   );
 }
+
+const SEVERITY_STYLES: Record<string, string> = {
+  low: "bg-slate-100 text-slate-700",
+  medium: "bg-amber-100 text-amber-800",
+  high: "bg-orange-100 text-orange-800",
+  critical: "bg-red-600 text-white",
+};
+
+export function SeverityBadge({ severity }: { severity: string }) {
+  return (
+    <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-semibold capitalize ${SEVERITY_STYLES[severity] ?? SEVERITY_STYLES.low}`}>
+      {severity}
+    </span>
+  );
+}
