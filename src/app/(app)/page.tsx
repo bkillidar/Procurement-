@@ -5,6 +5,7 @@ import { loadItems, type ItemView } from "@/lib/procurement-queries";
 import { getContext } from "@/lib/org";
 import { loadPermits, type PermitView } from "@/lib/permit-queries";
 import { isClosedPermit, permitRiskRank } from "@/lib/permits";
+import { isDonePunch } from "@/lib/punch";
 import { compareIssues, isOpenIssue, ISSUE_TYPE_LABELS } from "@/lib/issues";
 import { daysBetween, dueState, formatDate } from "@/lib/dates";
 import { isPreOrder, isReceived, riskRank, UNCONFIRMED, type ItemStatus } from "@/lib/procurement";
@@ -26,14 +27,16 @@ export const dynamic = "force-dynamic";
 async function load() {
   try {
     const { db, orgId } = await getContext();
-    const [portfolio, procurement, permitData, issueRes] = await Promise.all([
+    const [portfolio, procurement, permitData, issueRes, punchRes] = await Promise.all([
       loadPortfolio(),
       loadItems(),
       loadPermits(),
       db.from("issues").select("id, project_id, issue_type, title, severity, status, due_date, opened_on").eq("organization_id", orgId),
+      db.from("punch_list_items").select("project_id, status").eq("organization_id", orgId),
     ]);
     if (issueRes.error) throw new Error(issueRes.error.message);
-    return { data: { ...portfolio, items: procurement.items, permits: permitData.permits, issues: issueRes.data ?? [] }, error: null };
+    if (punchRes.error) throw new Error(punchRes.error.message);
+    return { data: { ...portfolio, items: procurement.items, permits: permitData.permits, punch: punchRes.data ?? [], issues: issueRes.data ?? [] }, error: null };
   } catch (e) {
     return { data: null, error: e instanceof Error ? e.message : "Unknown error" };
   }
@@ -61,7 +64,7 @@ export default async function DashboardPage() {
     );
   }
 
-  const { orgName, today, projects, open, items, issues, permits } = data;
+  const { orgName, today, projects, open, items, issues, permits, punch } = data;
   const projectNames = new Map(projects.map((p) => [p.id, p.name]));
   const openIssues = issues.filter((i) => isOpenIssue(i.status)).sort(compareIssues);
 
@@ -70,6 +73,7 @@ export default async function DashboardPage() {
   const permitAttention = livePermits
     .filter((p) => p.risk.level !== "none" || p.followUpDue)
     .sort((a, b) => permitRiskRank(b.risk.level) - permitRiskRank(a.risk.level));
+  const openPunch = punch.filter((i) => activeIds.has(i.project_id) && !isDonePunch(i.status)).length;
   const liveItems = items.filter((i) => activeIds.has(i.project_id));
   const flagged = liveItems
     .filter((i) => i.risk.level !== "none")
@@ -115,6 +119,7 @@ export default async function DashboardPage() {
             <Stat label="Materials to order" value={toOrder.length} tone={toOrder.length ? "warn" : "ok"} href="/procurement?view=ordering" />
             <Stat label="Awaiting confirmation" value={awaiting.length} tone={awaiting.length ? "warn" : "ok"} href="/procurement?view=awaiting" />
             <Stat label="Open issues" value={openIssues.length} tone={openIssues.length ? "bad" : "ok"} href="/issues" />
+            <Stat label="Open punch items" value={openPunch} tone={openPunch ? "warn" : "ok"} href="/punch" />
             <Stat label="Permit / utility delays" value={permitAttention.length} tone={permitAttention.length ? "bad" : "ok"} href="/permits?view=attention" />
           </div>
 

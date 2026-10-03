@@ -13,6 +13,7 @@ export interface DocumentView {
   delivery_id: string | null;
   issue_id: string | null;
   procurement_item_id: string | null;
+  punch_item_id: string | null;
   url: string | null; // short-lived signed link
 }
 
@@ -62,6 +63,7 @@ export async function loadDocuments(f: DocumentFilter = {}): Promise<DocumentVie
     delivery_id: d.delivery_id,
     issue_id: d.issue_id,
     procurement_item_id: d.procurement_item_id,
+    punch_item_id: d.punch_item_id,
     url: urlByPath.get(d.storage_path) ?? null,
   }));
 }
