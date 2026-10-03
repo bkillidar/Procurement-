@@ -156,3 +156,29 @@ Setup: a project in or near the Punch list phase. The template tasks "Create pun
 
 ### Overview
 - [ ] Punch (top nav) lists projects with open / to verify / done counts; the dashboard tile "Open punch items" matches.
+
+## Phase 7 — Dashboard, notifications, search, activity, tasks
+
+Setup: use a project with some overdue tasks, a flagged material and a permit with a late response (the Phase 3–5 setups).
+
+### Notifications
+- [ ] The 🔔 in the header shows the number of unread alerts. Open it: alerts are sorted critical → warning → info and each says what is wrong and which project.
+- [ ] Alerts exist for: overdue/due-tomorrow tasks, "Order now/soon" materials, vendor confirmation overdue, vendor follow-up due, delivery expected tomorrow/late, permit delays and follow-ups, overdue issues.
+- [ ] "Open" goes to the right item. "Mark read" removes it and lowers the count; "Mark all read" clears everything.
+- [ ] Fix the underlying problem (e.g. place the order): the alert disappears by itself. Change the situation (new expected date that slips again): a fresh alert appears even though the old one was marked read.
+
+### Search
+- [ ] Type 2+ characters in the header box (or Search page). Results are grouped (Projects, Tasks, Materials, Permits, Issues, Punch list, Vendors, Contacts, Documents) and each links to the right page.
+- [ ] Symbols such as `%`, `_`, `,` and `(` in the search box do not cause errors.
+
+### Tasks page
+- [ ] Tasks → tabs Overdue / Due in 7 days / All open with counts; project, assignee and text filters work.
+- [ ] "✓ Done" completes the task and returns to the same list (filters kept); dependents become Ready.
+
+### Activity
+- [ ] Activity shows orders, vendor changes, expected-delivery changes, deliveries, issues, permit status changes, punch verification, completed tasks and new projects, newest first, grouped by day; entries link to the item; project filter and "Show more" work.
+- [ ] Project page shows "Recent activity" and the Dashboard shows the latest 8.
+
+### Project and portfolio dashboards
+- [ ] Project page opens with "Needs attention" pills (overdue tasks, flagged materials, permit delays, open issues, punch items) or a green "Nothing needs attention" message. Pills link to filtered lists.
+- [ ] Dashboard sections are consistent with the lists they link to.

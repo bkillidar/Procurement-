@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { ensureDefaultTemplates, getContext } from "@/lib/org";
 import { syncProject } from "@/lib/project-sync";
+import { logActivity } from "@/lib/activity";
 import { buildProjectPlan, type Priority, type TemplateDef } from "@/lib/templates/plan";
 import { PHASE_NAMES } from "@/lib/templates/defaults";
 import { firstError, projectSchema } from "@/lib/validation";
@@ -106,6 +107,14 @@ export async function createProject(formData: FormData) {
         }
       }
       await syncProject(db, orgId, projectId);
+      await logActivity(db, {
+        orgId,
+        projectId,
+        entityType: "project",
+        entityId: projectId,
+        action: "project_created",
+        summary: `Project created: ${fields.name}${template_id ? " from a template" : ""}`,
+      });
     } catch (e) {
       // Don't leave a half-built project behind (children cascade).
       await db.from("projects").delete().eq("id", projectId).eq("organization_id", orgId);

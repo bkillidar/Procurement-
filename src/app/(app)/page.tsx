@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { hasServerCredentials } from "@/lib/supabase/admin";
 import { loadPortfolio } from "@/lib/queries";
-import { loadItems, type ItemView } from "@/lib/procurement-queries";
+import { loadAllItems, type ItemView } from "@/lib/procurement-queries";
 import { getContext } from "@/lib/org";
-import { loadPermits, type PermitView } from "@/lib/permit-queries";
+import { loadAllPermits, type PermitView } from "@/lib/permit-queries";
 import { isClosedPermit, permitRiskRank } from "@/lib/permits";
 import { isDonePunch } from "@/lib/punch";
+import { activityHref } from "@/lib/activity-links";
 import { compareIssues, isOpenIssue, ISSUE_TYPE_LABELS } from "@/lib/issues";
 import { daysBetween, dueState, formatDate } from "@/lib/dates";
 import { isPreOrder, isReceived, riskRank, UNCONFIRMED, type ItemStatus } from "@/lib/procurement";
@@ -27,16 +28,22 @@ export const dynamic = "force-dynamic";
 async function load() {
   try {
     const { db, orgId } = await getContext();
-    const [portfolio, procurement, permitData, issueRes, punchRes] = await Promise.all([
+    const [portfolio, procurement, permitData, issueRes, punchRes, activityRes] = await Promise.all([
       loadPortfolio(),
-      loadItems(),
-      loadPermits(),
+      loadAllItems(),
+      loadAllPermits(),
       db.from("issues").select("id, project_id, issue_type, title, severity, status, due_date, opened_on").eq("organization_id", orgId),
       db.from("punch_list_items").select("project_id, status").eq("organization_id", orgId),
+      db
+        .from("activity_log")
+        .select("id, entity_type, entity_id, project_id, summary, created_at")
+        .eq("organization_id", orgId)
+        .order("created_at", { ascending: false })
+        .limit(8),
     ]);
     if (issueRes.error) throw new Error(issueRes.error.message);
     if (punchRes.error) throw new Error(punchRes.error.message);
-    return { data: { ...portfolio, items: procurement.items, permits: permitData.permits, punch: punchRes.data ?? [], issues: issueRes.data ?? [] }, error: null };
+    return { data: { ...portfolio, items: procurement.items, permits: permitData.permits, punch: punchRes.data ?? [], activity: activityRes.data ?? [], issues: issueRes.data ?? [] }, error: null };
   } catch (e) {
     return { data: null, error: e instanceof Error ? e.message : "Unknown error" };
   }
@@ -64,7 +71,7 @@ export default async function DashboardPage() {
     );
   }
 
-  const { orgName, today, projects, open, items, issues, permits, punch } = data;
+  const { orgName, today, projects, open, items, issues, permits, punch, activity } = data;
   const projectNames = new Map(projects.map((p) => [p.id, p.name]));
   const openIssues = issues.filter((i) => isOpenIssue(i.status)).sort(compareIssues);
 
@@ -199,6 +206,29 @@ export default async function DashboardPage() {
               <p className="p-4 text-sm text-slate-500">Nothing due this week.</p>
             ) : (
               <TaskList tasks={soon.slice(0, 15)} today={today} />
+            )}
+          </Section>
+
+          <Section title="Recent activity" count={activity.length}>
+            {activity.length === 0 ? (
+              <p className="p-4 text-sm text-slate-500">Nothing yet.</p>
+            ) : (
+              <>
+                <ul className="divide-y divide-slate-100">
+                  {activity.map((a) => {
+                    const href = activityHref(a.entity_type, a.entity_id, a.project_id);
+                    return (
+                      <li key={a.id} className="p-3 text-sm">
+                        {href ? <Link href={href} className="hover:underline">{a.summary}</Link> : a.summary}
+                        <span className="block text-xs text-slate-500">{formatDate(a.created_at.slice(0, 10))}</span>
+                      </li>
+                    );
+                  })}
+                </ul>
+                <Link href="/activity" className="block border-t border-slate-100 p-3 text-center text-sm text-slate-600 hover:bg-slate-50">
+                  All activity
+                </Link>
+              </>
             )}
           </Section>
 

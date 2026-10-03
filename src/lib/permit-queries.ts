@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { getContext } from "@/lib/org";
 import { todayISO, daysBetween } from "@/lib/dates";
 import { assessPermit, isClosedPermit, type PermitAssessment } from "@/lib/permits";
@@ -59,3 +60,6 @@ export async function loadPermits(opts: { projectId?: string } = {}): Promise<{ 
   });
   return { today, permits };
 }
+
+/** Portfolio-wide permits, shared by everything rendered in one request. */
+export const loadAllPermits = cache(() => loadPermits());
