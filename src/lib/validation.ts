@@ -158,3 +158,61 @@ export const followUpSchema = z.object({
   responsible_label: text(100),
   notes: text(),
 });
+
+const checkbox = z
+  .union([z.literal("on"), z.literal("true"), z.literal("")])
+  .optional()
+  .transform((v) => v === "on" || v === "true");
+
+export const deliverySchema = z.object({
+  item_id: uuid,
+  received_on: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Enter the delivery date"),
+  quantity_received: numberField("Quantity received"),
+  is_partial: checkbox,
+  has_damage: checkbox,
+  has_missing_items: checkbox,
+  has_incorrect_items: checkbox,
+  needs_replacement: checkbox,
+  notes: text(),
+});
+
+export const ISSUE_TYPES = [
+  "procurement",
+  "vendor",
+  "delivery",
+  "permit",
+  "utility",
+  "design",
+  "construction",
+  "other",
+] as const;
+export const ISSUE_SEVERITIES = ["low", "medium", "high", "critical"] as const;
+export const ISSUE_STATUSES = ["open", "in_progress", "waiting", "resolved", "closed"] as const;
+
+export const issueSchema = z.object({
+  project_id: uuid,
+  issue_type: z.enum(ISSUE_TYPES),
+  title: requiredText("Title", 200),
+  description: text(),
+  severity: z.enum(ISSUE_SEVERITIES),
+  owner_label: text(100),
+  due_date: dateField,
+  procurement_item_id: optionalUuid,
+  task_id: optionalUuid,
+});
+
+export const issueUpdateSchema = z.object({
+  issue_id: uuid,
+  status: z.enum(ISSUE_STATUSES),
+  severity: z.enum(ISSUE_SEVERITIES),
+  owner_label: text(100),
+  due_date: dateField,
+  description: text(),
+  resolution: text(),
+});
+
+export const replacementSchema = z.object({
+  item_id: uuid,
+  quantity: numberField("Quantity"),
+  notes: text(),
+});

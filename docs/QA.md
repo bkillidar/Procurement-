@@ -72,3 +72,31 @@ Setup: a project with a start date in the past (so tasks are overdue/near) and o
 - [ ] Procurement tabs (Needs attention / To order / Awaiting confirmation / On the way / Delivered / All) show matching counts; search works.
 - [ ] Dashboard shows Procurement risks, Vendor follow-ups due, Late deliveries and Deliveries in the next 14 days; stat tiles link to filtered lists.
 - [ ] Project page shows the Procurement card with flagged items.
+
+## Phase 4 — Deliveries, issues, photos, documents
+
+Setup: an item with quantity 32, status Ordered or later. **Uploads need `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` set in Vercel** (it is a public key, safe in the browser).
+
+### Receiving
+- [ ] An item that is not yet ordered shows no "Receive a delivery" form. An ordered/confirmed/shipped item does.
+- [ ] Save a delivery with the quantity blank: item becomes Delivered, received quantity 32, actual delivery date set, no issue created, any tasks waiting on it become Ready.
+- [ ] Receive 28 of 32: item "Partially delivered", an issue "partial delivery (28 of 32 received)" opens (medium). Receive the remaining 4 (blank quantity): item Delivered and the partial issue is resolved automatically.
+- [ ] Tick Damaged: item becomes Problem; issue "Windows: damaged" opens (high; critical if required within 7 days).
+- [ ] Receive more than ordered: flagged "incorrect quantity (N more than ordered)".
+- [ ] Tick Replacement needed → "Order a replacement" appears; creating it makes a new "Replacement: …" item (Ready to order) that links back and shows "Replaced by" on the original.
+
+### Photos
+- [ ] On a phone, "Add photos" offers camera or library. Choose 2–3 photos: each shows ✓, thumbnails appear under the delivery.
+- [ ] Photos taken on a phone (several MB) upload without error. Tap a thumbnail to open it full size. Delete asks for confirmation.
+- [ ] A 1 MB PDF uploads from the Documents page; a file over 50 MB or an .exe is rejected with a message.
+
+### Issues
+- [ ] Issues → New issue: choose a project, then fill the form (type, severity, owner, due date, optional related material/task). Empty title is rejected.
+- [ ] List: Open / Resolved / All tabs, search, type and severity filters; sorted most severe first; overdue due dates are red.
+- [ ] Open an issue: add photos, change status to Resolved with a resolution. If it was the last open delivery issue for a "Problem" item, the item returns to Delivered (or Partially delivered if quantity is short).
+- [ ] Reopen a resolved delivery issue: its item goes back to Problem.
+- [ ] Dashboard shows "Open issues" and the open-issues list.
+
+### Documents
+- [ ] Documents page: pick project and type, upload; files appear under the right heading with links that open the file.
+- [ ] Filters by project, type and name work. Delete removes the file.

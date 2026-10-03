@@ -28,6 +28,7 @@ export interface ItemRow {
   delivery_status: string;
   quantity_received: number | null;
   notes: string | null;
+  replaces_item_id: string | null;
 }
 
 export interface ItemView extends ItemRow {

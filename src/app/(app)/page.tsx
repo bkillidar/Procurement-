@@ -2,6 +2,8 @@ import Link from "next/link";
 import { hasServerCredentials } from "@/lib/supabase/admin";
 import { loadPortfolio } from "@/lib/queries";
 import { loadItems, type ItemView } from "@/lib/procurement-queries";
+import { getContext } from "@/lib/org";
+import { compareIssues, isOpenIssue, ISSUE_TYPE_LABELS } from "@/lib/issues";
 import { daysBetween, dueState, formatDate } from "@/lib/dates";
 import { isPreOrder, isReceived, riskRank, UNCONFIRMED, type ItemStatus } from "@/lib/procurement";
 import {
@@ -12,6 +14,7 @@ import {
   PriorityBadge,
   ProgressBar,
   RiskBadge,
+  SeverityBadge,
   StatusBadge,
 } from "@/components/ui";
 
@@ -19,8 +22,14 @@ export const dynamic = "force-dynamic";
 
 async function load() {
   try {
-    const [portfolio, procurement] = await Promise.all([loadPortfolio(), loadItems()]);
-    return { data: { ...portfolio, items: procurement.items }, error: null };
+    const { db, orgId } = await getContext();
+    const [portfolio, procurement, issueRes] = await Promise.all([
+      loadPortfolio(),
+      loadItems(),
+      db.from("issues").select("id, project_id, issue_type, title, severity, status, due_date, opened_on").eq("organization_id", orgId),
+    ]);
+    if (issueRes.error) throw new Error(issueRes.error.message);
+    return { data: { ...portfolio, items: procurement.items, issues: issueRes.data ?? [] }, error: null };
   } catch (e) {
     return { data: null, error: e instanceof Error ? e.message : "Unknown error" };
   }
@@ -48,7 +57,9 @@ export default async function DashboardPage() {
     );
   }
 
-  const { orgName, today, projects, open, items } = data;
+  const { orgName, today, projects, open, items, issues } = data;
+  const projectNames = new Map(projects.map((p) => [p.id, p.name]));
+  const openIssues = issues.filter((i) => isOpenIssue(i.status)).sort(compareIssues);
   const activeIds = new Set(projects.filter((p) => p.status === "active" || p.status === "planning").map((p) => p.id));
   const liveItems = items.filter((i) => activeIds.has(i.project_id));
   const flagged = liveItems
@@ -94,7 +105,31 @@ export default async function DashboardPage() {
             <Stat label="Materials flagged" value={flagged.length} tone={flagged.length ? "bad" : "ok"} href="/procurement?view=attention" />
             <Stat label="Materials to order" value={toOrder.length} tone={toOrder.length ? "warn" : "ok"} href="/procurement?view=ordering" />
             <Stat label="Awaiting confirmation" value={awaiting.length} tone={awaiting.length ? "warn" : "ok"} href="/procurement?view=awaiting" />
+            <Stat label="Open issues" value={openIssues.length} tone={openIssues.length ? "bad" : "ok"} href="/issues" />
           </div>
+
+          <Section title="Open issues" count={openIssues.length}>
+            {openIssues.length === 0 ? (
+              <p className="p-4 text-sm text-slate-500">No open issues.</p>
+            ) : (
+              <ul className="divide-y divide-slate-100">
+                {openIssues.slice(0, 8).map((i) => (
+                  <li key={i.id}>
+                    <Link href={`/issues/${i.id}`} className="block space-y-1 p-4 hover:bg-slate-50">
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="font-medium">{i.title}</p>
+                        <SeverityBadge severity={i.severity} />
+                      </div>
+                      <p className="text-sm text-slate-500">
+                        {projectNames.get(i.project_id)} · {ISSUE_TYPE_LABELS[i.issue_type] ?? i.issue_type}
+                      </p>
+                      <DueBadge due={i.due_date} state={dueState(i.due_date, today)} />
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Section>
 
           <Section title="Procurement risks" count={flagged.length}>
             {flagged.length === 0 ? (

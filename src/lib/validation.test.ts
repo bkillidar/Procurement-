@@ -90,3 +90,32 @@ describe("procurement schemas", () => {
     expect(followUpSchema.parse({ item_id: id, method: "phone", next_follow_up_on: "2026-10-09" }).next_follow_up_on).toBe("2026-10-09");
   });
 });
+
+import { deliverySchema, issueSchema, issueUpdateSchema, replacementSchema } from "./validation";
+
+describe("delivery and issue schemas", () => {
+  const id = "6f1c1c0e-8c0a-4c36-9a53-0b8f3b0a1111";
+
+  it("parses checkboxes: present = true, absent = false", () => {
+    const r = deliverySchema.parse({ item_id: id, received_on: "2026-10-03", has_damage: "on", quantity_received: "28" });
+    expect(r.has_damage).toBe(true);
+    expect(r.is_partial).toBe(false);
+    expect(r.quantity_received).toBe(28);
+  });
+
+  it("requires a delivery date and rejects negative quantities", () => {
+    expect(deliverySchema.safeParse({ item_id: id, received_on: "" }).success).toBe(false);
+    expect(deliverySchema.safeParse({ item_id: id, received_on: "2026-10-03", quantity_received: "-1" }).success).toBe(false);
+    expect(deliverySchema.parse({ item_id: id, received_on: "2026-10-03", quantity_received: "" }).quantity_received).toBeNull();
+  });
+
+  it("validates issues", () => {
+    expect(issueSchema.safeParse({ project_id: id, issue_type: "delivery", title: "", severity: "high" }).success).toBe(false);
+    expect(issueSchema.safeParse({ project_id: id, issue_type: "weather", title: "x", severity: "high" }).success).toBe(false);
+    expect(issueSchema.safeParse({ project_id: id, issue_type: "permit", title: "x", severity: "urgent" }).success).toBe(false);
+    const ok = issueSchema.parse({ project_id: id, issue_type: "permit", title: "Permit stalled", severity: "high", due_date: "" });
+    expect(ok.due_date).toBeNull();
+    expect(issueUpdateSchema.safeParse({ issue_id: id, status: "done", severity: "low" }).success).toBe(false);
+    expect(replacementSchema.safeParse({ item_id: id, quantity: "-4" }).success).toBe(false);
+  });
+});
