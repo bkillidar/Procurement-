@@ -5,15 +5,24 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { getContext } from "@/lib/org";
 import { syncProject } from "@/lib/project-sync";
+import { logActivity } from "@/lib/activity";
 import { TASK_STATUSES, wouldCreateCycle } from "@/lib/tasks";
 import { firstError, taskSchema } from "@/lib/validation";
 
 const uuid = z.string().uuid();
 
-function back(projectId: string, error?: string): never {
+function back(projectId: string, error?: string, to?: string): never {
   revalidatePath(`/projects/${projectId}`);
+  revalidatePath("/tasks");
   revalidatePath("/");
-  redirect(error ? `/projects/${projectId}?error=${encodeURIComponent(error)}` : `/projects/${projectId}`);
+  const base = to ?? `/projects/${projectId}`;
+  redirect(error ? `${base}${base.includes("?") ? "&" : "?"}error=${encodeURIComponent(error)}` : base);
+}
+
+/** Only same-site paths: never redirect somewhere an attacker chose. */
+function safePath(value: FormDataEntryValue | null): string | undefined {
+  const v = typeof value === "string" ? value : "";
+  return v.startsWith("/") && !v.startsWith("//") && !v.includes("\\") ? v : undefined;
 }
 
 async function loadTask(taskId: string) {
@@ -75,12 +84,23 @@ export async function setTaskStatus(formData: FormData) {
       .eq("id", task.id)
       .eq("organization_id", orgId);
     if (e) throw new Error(e.message);
+    if (status.data === "complete" && task.status !== "complete") {
+      const { data: t } = await db.from("tasks").select("title").eq("id", task.id).eq("organization_id", orgId).maybeSingle();
+      await logActivity(db, {
+        orgId,
+        projectId: task.project_id,
+        entityType: "task",
+        entityId: task.id,
+        action: "task_completed",
+        summary: `Task completed: ${t?.title ?? "task"}`,
+      });
+    }
     await syncProject(db, orgId, task.project_id, task.id);
   } catch (e) {
     error = e instanceof Error ? e.message : "Could not update the task";
   }
   if (!projectId) redirect("/projects");
-  back(projectId, error);
+  back(projectId, error, safePath(formData.get("back")));
 }
 
 export async function setTaskDetails(formData: FormData) {

@@ -7,6 +7,8 @@ import { loadPermits } from "@/lib/permit-queries";
 import { permitRiskRank } from "@/lib/permits";
 import { addStandardPermits } from "@/app/actions/permits";
 import { summarizePunch } from "@/lib/punch";
+import { activityHref } from "@/lib/activity-links";
+import { isOpenIssue } from "@/lib/issues";
 import { ITEM_STATUS_LABELS, isReceived, riskRank, type ItemStatus } from "@/lib/procurement";
 import { dueState, formatDate, todayISO } from "@/lib/dates";
 import { TASK_STATUSES, TASK_STATUS_LABELS } from "@/lib/tasks";
@@ -78,6 +80,17 @@ export default async function ProjectPage(props: PageProps<"/projects/[id]">) {
     : { data: [] };
   const { items: projectItems } = await loadItems({ projectId: id });
   const itemById = new Map(projectItems.map((i) => [i.id, i]));
+  const [{ data: issueRows }, { data: activityRows }] = await Promise.all([
+    db.from("issues").select("status").eq("organization_id", orgId).eq("project_id", id),
+    db
+      .from("activity_log")
+      .select("id, entity_type, entity_id, project_id, summary, created_at")
+      .eq("organization_id", orgId)
+      .eq("project_id", id)
+      .order("created_at", { ascending: false })
+      .limit(8),
+  ]);
+  const openIssueCount = (issueRows ?? []).filter((i) => isOpenIssue(i.status)).length;
   const { data: punchRows } = await db
     .from("punch_list_items")
     .select("status")
@@ -115,6 +128,30 @@ export default async function ProjectPage(props: PageProps<"/projects/[id]">) {
       </div>
 
       <ErrorBanner message={typeof error === "string" ? error : undefined} />
+
+      {(() => {
+        const pills: { label: string; count: number; href: string }[] = [
+          { label: "overdue tasks", count: overdue, href: "/tasks?view=overdue&project=" + project.id },
+          { label: "materials flagged", count: atRisk.length, href: "/procurement?view=attention" },
+          { label: "permit/utility delays", count: flaggedPermits.length, href: "/permits?view=attention" },
+          { label: "open issues", count: openIssueCount, href: "/issues" },
+          { label: "punch items to do", count: punch.open + punch.readyForVerification, href: `/projects/${project.id}/punch` },
+        ].filter((p) => p.count > 0);
+        return pills.length === 0 ? (
+          <p className="rounded-lg border border-green-300 bg-green-50 p-3 text-sm text-green-900">Nothing needs attention on this project right now.</p>
+        ) : (
+          <section className="rounded-lg border border-amber-300 bg-amber-50 p-3">
+            <h2 className="mb-2 text-sm font-semibold text-amber-900">Needs attention</h2>
+            <div className="flex flex-wrap gap-2">
+              {pills.map((p) => (
+                <Link key={p.label} href={p.href} className="rounded-full bg-white px-3 py-1 text-sm font-medium text-amber-900 ring-1 ring-amber-300">
+                  {p.count} {p.label}
+                </Link>
+              ))}
+            </div>
+          </section>
+        );
+      })()}
 
       <div className={`${cardClass} space-y-3 p-4`}>
         <div className="flex flex-wrap items-center justify-between gap-2">
@@ -432,6 +469,28 @@ export default async function ProjectPage(props: PageProps<"/projects/[id]">) {
       })}
 
       {(phases ?? []).length === 0 && <EmptyState>This project has no phases.</EmptyState>}
+
+      {(activityRows ?? []).length > 0 && (
+        <section className={`${cardClass} p-4`}>
+          <div className="mb-2 flex items-center justify-between">
+            <h2 className="font-medium">Recent activity</h2>
+            <Link href={`/activity?project=${project.id}`} className="text-sm text-slate-500 underline">
+              All activity
+            </Link>
+          </div>
+          <ul className="divide-y divide-slate-100 text-sm">
+            {(activityRows ?? []).map((a) => {
+              const href = activityHref(a.entity_type, a.entity_id, a.project_id);
+              return (
+                <li key={a.id} className="py-2">
+                  {href ? <Link href={href} className="hover:underline">{a.summary}</Link> : a.summary}
+                  <span className="block text-xs text-slate-500">{formatDate(a.created_at.slice(0, 10))}</span>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
 
       <details className={`${cardClass} p-4`}>
         <summary className="cursor-pointer font-medium">+ Add a task</summary>

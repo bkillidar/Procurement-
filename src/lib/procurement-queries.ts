@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { getContext } from "@/lib/org";
 import { todayISO } from "@/lib/dates";
 import { assessRisk, followUpStatus, type RiskAssessment } from "@/lib/procurement";
@@ -114,3 +115,6 @@ export async function loadItems(opts: { projectId?: string } = {}): Promise<{ to
   });
   return { today, items };
 }
+
+/** Portfolio-wide items, shared by everything rendered in one request. */
+export const loadAllItems = cache(() => loadItems());

@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { getContext } from "@/lib/org";
 import { dueState, todayISO } from "@/lib/dates";
 
@@ -29,7 +30,7 @@ export interface OpenTask {
 }
 
 /** Everything the dashboard and project list need, in three queries. */
-export async function loadPortfolio() {
+export const loadPortfolio = cache(async function loadPortfolio() {
   const { db, orgId, orgName } = await getContext();
   const [projRes, phaseRes, taskRes] = await Promise.all([
     db
@@ -84,4 +85,4 @@ export async function loadPortfolio() {
     .sort((a, b) => (a.due_date ?? "9999").localeCompare(b.due_date ?? "9999"));
 
   return { orgName, today, projects, open };
-}
+});
