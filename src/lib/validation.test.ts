@@ -51,3 +51,42 @@ describe("contactSchema / vendorSchema", () => {
     expect(vendorSchema.parse({ name: "V", typical_lead_time_days: "" }).typical_lead_time_days).toBeNull();
   });
 });
+
+import { confirmationSchema, followUpSchema, orderSchema, procurementItemSchema, quoteSchema } from "./validation";
+
+describe("procurement schemas", () => {
+  const id = "6f1c1c0e-8c0a-4c36-9a53-0b8f3b0a1111";
+
+  it("accepts an item with blanks and parses numbers", () => {
+    const r = procurementItemSchema.parse({
+      project_id: id,
+      category: "Windows",
+      description: "Double-hung, 32 units",
+      quantity: "32",
+      estimated_lead_time_days: "28",
+      required_on_site_date: "",
+    });
+    expect(r.quantity).toBe(32);
+    expect(r.estimated_lead_time_days).toBe(28);
+    expect(r.required_on_site_date).toBeNull();
+    expect(r.unit).toBeNull();
+  });
+
+  it("rejects negative or fractional lead times and missing category/description", () => {
+    const base = { project_id: id, category: "Windows", description: "x" };
+    expect(procurementItemSchema.safeParse({ ...base, estimated_lead_time_days: "-1" }).success).toBe(false);
+    expect(procurementItemSchema.safeParse({ ...base, estimated_lead_time_days: "2.5" }).success).toBe(false);
+    expect(procurementItemSchema.safeParse({ ...base, category: "" }).success).toBe(false);
+    expect(procurementItemSchema.safeParse({ ...base, description: " " }).success).toBe(false);
+  });
+
+  it("validates quotes, orders, confirmations and follow-ups", () => {
+    expect(quoteSchema.safeParse({ item_id: id, amount: "-5" }).success).toBe(false);
+    expect(quoteSchema.parse({ item_id: id, amount: "1250.50", lead_time_days: "" }).amount).toBe(1250.5);
+    expect(orderSchema.safeParse({ item_id: id, actual_order_date: "" }).success).toBe(false);
+    expect(orderSchema.parse({ item_id: id, actual_order_date: "2026-10-01", final_cost: "" }).final_cost).toBeNull();
+    expect(confirmationSchema.safeParse({ item_id: id, confirmed_on: "tomorrow" }).success).toBe(false);
+    expect(followUpSchema.safeParse({ item_id: id, method: "carrier-pigeon" }).success).toBe(false);
+    expect(followUpSchema.parse({ item_id: id, method: "phone", next_follow_up_on: "2026-10-09" }).next_follow_up_on).toBe("2026-10-09");
+  });
+});

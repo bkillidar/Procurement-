@@ -97,3 +97,64 @@ export const vendorSchema = z.object({
 export function firstError(error: z.ZodError): string {
   return error.issues[0]?.message ?? "Invalid input";
 }
+
+export const ITEM_METHODS = ["phone", "email", "text", "in_person", "portal", "other"] as const;
+
+const numberField = (label: string, { int = false, min = 0 } = {}) =>
+  z
+    .union([z.literal(""), z.coerce.number().min(min, `${label} cannot be less than ${min}`)])
+    .optional()
+    .transform((v) => (v === "" || v === undefined ? null : v))
+    .refine((v) => v === null || !int || Number.isInteger(v), `${label} must be a whole number`);
+
+const money = (label: string) => numberField(label);
+
+export const procurementItemSchema = z.object({
+  project_id: uuid,
+  category: requiredText("Category", 100),
+  description: requiredText("Description", 300),
+  specification: text(),
+  quantity: numberField("Quantity"),
+  unit: text(30),
+  source_reference: text(200),
+  required_on_site_date: dateField,
+  estimated_lead_time_days: numberField("Lead time", { int: true }),
+  vendor_id: optionalUuid,
+  notes: text(),
+});
+
+export const quoteSchema = z.object({
+  item_id: uuid,
+  vendor_id: optionalUuid,
+  amount: money("Amount"),
+  lead_time_days: numberField("Lead time", { int: true }),
+  availability_notes: text(500),
+  quoted_on: dateField,
+  valid_until: dateField,
+  notes: text(),
+});
+
+export const orderSchema = z.object({
+  item_id: uuid,
+  vendor_id: optionalUuid,
+  actual_order_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Enter the order date"),
+  order_number: text(100),
+  final_cost: money("Final cost"),
+  expected_delivery_date: dateField,
+});
+
+export const confirmationSchema = z.object({
+  item_id: uuid,
+  confirmed_on: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Enter the confirmation date"),
+  expected_delivery_date: dateField,
+  notes: text(500),
+});
+
+export const followUpSchema = z.object({
+  item_id: uuid,
+  method: z.enum(ITEM_METHODS),
+  result: text(500),
+  next_follow_up_on: dateField,
+  responsible_label: text(100),
+  notes: text(),
+});

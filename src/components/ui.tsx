@@ -86,3 +86,43 @@ export function ProgressBar({ done, total }: { done: number; total: number }) {
     </div>
   );
 }
+
+import { ITEM_STATUS_LABELS, RISK_LEVEL_LABEL, type ItemStatus, type RiskLevel } from "@/lib/procurement";
+
+const RISK_STYLES: Record<RiskLevel, string> = {
+  none: "bg-green-100 text-green-800",
+  medium: "bg-amber-100 text-amber-800",
+  high: "bg-orange-100 text-orange-800",
+  critical: "bg-red-600 text-white",
+};
+
+export function RiskBadge({ level }: { level: RiskLevel }) {
+  return (
+    <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-semibold ${RISK_STYLES[level]}`}>
+      {RISK_LEVEL_LABEL[level]}
+    </span>
+  );
+}
+
+const ITEM_STATUS_STYLES: Partial<Record<ItemStatus, string>> = {
+  ready_to_order: "bg-blue-100 text-blue-800",
+  ordered: "bg-indigo-100 text-indigo-800",
+  awaiting_vendor_confirmation: "bg-amber-100 text-amber-800",
+  confirmed: "bg-indigo-100 text-indigo-800",
+  in_production: "bg-indigo-100 text-indigo-800",
+  shipped: "bg-cyan-100 text-cyan-800",
+  partially_delivered: "bg-orange-100 text-orange-800",
+  delivered: "bg-green-100 text-green-800",
+  complete: "bg-green-100 text-green-800",
+  problem: "bg-red-100 text-red-800",
+};
+
+export function ItemStatusBadge({ status }: { status: string }) {
+  return (
+    <span
+      className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${ITEM_STATUS_STYLES[status as ItemStatus] ?? "bg-slate-100 text-slate-700"}`}
+    >
+      {ITEM_STATUS_LABELS[status as ItemStatus] ?? status}
+    </span>
+  );
+}

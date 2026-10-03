@@ -1,6 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { computePhaseState, statusAfterDependencyChange, type TaskStatus } from "@/lib/tasks";
+import { isReceived } from "@/lib/procurement";
 
 /**
  * Re-derives automatic task statuses (ready / not started) from dependencies,
@@ -24,12 +25,19 @@ export async function syncProject(db: SupabaseClient, orgId: string, projectId: 
   const { data: deps, error: dErr } = taskIds.length
     ? await db
         .from("task_dependencies")
-        .select("task_id, depends_on_task_id")
+        .select("task_id, depends_on_task_id, depends_on_procurement_item_id")
         .eq("organization_id", orgId)
         .in("task_id", taskIds)
-        .not("depends_on_task_id", "is", null)
     : { data: [], error: null };
   if (dErr) throw new Error(dErr.message);
+
+  // A procurement dependency is satisfied once the material is received.
+  const itemIds = [...new Set((deps ?? []).map((d) => d.depends_on_procurement_item_id).filter(Boolean))];
+  const { data: items, error: iErr } = itemIds.length
+    ? await db.from("procurement_items").select("id, status").eq("organization_id", orgId).in("id", itemIds)
+    : { data: [], error: null };
+  if (iErr) throw new Error(iErr.message);
+  const itemDone = new Map<string, boolean>((items ?? []).map((i) => [i.id, isReceived(i.status)]));
 
   const statusById = new Map<string, string>(tasks.map((t) => [t.id, t.status]));
 
@@ -41,7 +49,13 @@ export async function syncProject(db: SupabaseClient, orgId: string, projectId: 
       if (task.id === keepTaskId) continue;
       const depStatuses = (deps ?? [])
         .filter((d) => d.task_id === task.id)
-        .map((d) => statusById.get(d.depends_on_task_id) ?? "complete");
+        .map((d) =>
+          d.depends_on_procurement_item_id
+            ? itemDone.get(d.depends_on_procurement_item_id)
+              ? "complete"
+              : "pending"
+            : (statusById.get(d.depends_on_task_id) ?? "complete"),
+        );
       if (depStatuses.length === 0) continue;
       const current = statusById.get(task.id) as TaskStatus;
       const next = statusAfterDependencyChange(current, depStatuses);
