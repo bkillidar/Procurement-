@@ -193,3 +193,41 @@ export async function removeDependency(formData: FormData) {
   if (!projectId) redirect("/projects");
   back(projectId, error);
 }
+
+export async function addItemDependency(formData: FormData) {
+  const id = uuid.safeParse(formData.get("task_id"));
+  const item = uuid.safeParse(formData.get("procurement_item_id"));
+  if (!id.success) redirect("/projects");
+
+  let projectId = "";
+  let error: string | undefined;
+  try {
+    const { db, orgId, task } = await loadTask(id.data);
+    projectId = task.project_id;
+    if (!item.success) throw new Error("Choose a procurement item");
+    const { data: found } = await db
+      .from("procurement_items")
+      .select("id")
+      .eq("id", item.data)
+      .eq("organization_id", orgId)
+      .eq("project_id", task.project_id)
+      .maybeSingle();
+    if (!found) throw new Error("That item is not in this project");
+    const { data: existing } = await db
+      .from("task_dependencies")
+      .select("id")
+      .eq("task_id", task.id)
+      .eq("depends_on_procurement_item_id", item.data)
+      .maybeSingle();
+    if (existing) throw new Error("Already a dependency");
+    const { error: e } = await db
+      .from("task_dependencies")
+      .insert({ organization_id: orgId, task_id: task.id, depends_on_procurement_item_id: item.data });
+    if (e) throw new Error(e.message);
+    await syncProject(db, orgId, task.project_id);
+  } catch (e) {
+    error = e instanceof Error ? e.message : "Could not add the dependency";
+  }
+  if (!projectId) redirect("/projects");
+  back(projectId, error);
+}

@@ -2,10 +2,13 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { z } from "zod";
 import { getContext } from "@/lib/org";
+import { loadItems } from "@/lib/procurement-queries";
+import { ITEM_STATUS_LABELS, isReceived, riskRank, type ItemStatus } from "@/lib/procurement";
 import { dueState, formatDate, todayISO } from "@/lib/dates";
 import { TASK_STATUSES, TASK_STATUS_LABELS } from "@/lib/tasks";
 import {
   addDependency,
+  addItemDependency,
   addTask,
   deleteTask,
   removeDependency,
@@ -21,8 +24,10 @@ import {
   EmptyState,
   ErrorBanner,
   inputClass,
+  ItemStatusBadge,
   labelClass,
   PriorityBadge,
+  RiskBadge,
   primaryButton,
   ProgressBar,
   secondaryButton,
@@ -62,11 +67,15 @@ export default async function ProjectPage(props: PageProps<"/projects/[id]">) {
   const { data: deps } = taskIds.length
     ? await db
         .from("task_dependencies")
-        .select("id, task_id, depends_on_task_id")
+        .select("id, task_id, depends_on_task_id, depends_on_procurement_item_id")
         .eq("organization_id", orgId)
         .in("task_id", taskIds)
-        .not("depends_on_task_id", "is", null)
     : { data: [] };
+  const { items: projectItems } = await loadItems({ projectId: id });
+  const itemById = new Map(projectItems.map((i) => [i.id, i]));
+  const atRisk = projectItems
+    .filter((i) => i.risk.level !== "none")
+    .sort((a, b) => riskRank(b.risk.level) - riskRank(a.risk.level));
 
   const today = todayISO();
   const taskById = new Map(taskList.map((t) => [t.id, t]));
@@ -134,6 +143,45 @@ export default async function ProjectPage(props: PageProps<"/projects/[id]">) {
         )}
       </div>
 
+      <section className={`${cardClass} space-y-3 p-4`}>
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="font-medium">
+            Procurement{" "}
+            <span className="text-sm font-normal text-slate-500">
+              ({projectItems.length} item{projectItems.length === 1 ? "" : "s"}
+              {atRisk.length ? `, ${atRisk.length} flagged` : ""})
+            </span>
+          </h2>
+          <Link href={`/procurement/new?project=${project.id}`} className={secondaryButton}>
+            Add item
+          </Link>
+        </div>
+        {projectItems.length === 0 ? (
+          <p className="text-sm text-slate-500">No materials tracked yet.</p>
+        ) : atRisk.length === 0 ? (
+          <p className="text-sm text-slate-500">
+            Nothing flagged.{" "}
+            <Link href="/procurement?view=all" className="underline">
+              View all items
+            </Link>
+          </p>
+        ) : (
+          <ul className="divide-y divide-slate-100">
+            {atRisk.slice(0, 5).map((i) => (
+              <li key={i.id} className="py-2">
+                <Link href={`/procurement/${i.id}`} className="block space-y-1">
+                  <span className="flex items-center justify-between gap-2">
+                    <span className="font-medium">{i.description}</span>
+                    <RiskBadge level={i.risk.level} />
+                  </span>
+                  <span className="block text-sm text-slate-600">{i.risk.risks[0]?.message}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
       {(phases ?? []).map((phase) => {
         const phaseTasks = taskList.filter((t) => t.phase_id === phase.id);
         const phaseDone = phaseTasks.filter((t) => t.status === "complete").length;
@@ -156,11 +204,23 @@ export default async function ProjectPage(props: PageProps<"/projects/[id]">) {
               <ul className="divide-y divide-slate-100 border-t border-slate-100">
                 {phaseTasks.map((task) => {
                   const myDeps = (deps ?? []).filter((d) => d.task_id === task.id);
-                  const waitingOn = myDeps
-                    .map((d) => taskById.get(d.depends_on_task_id))
-                    .filter((t) => t && t.status !== "complete");
+                  const taskDeps = myDeps.filter((d) => d.depends_on_task_id);
+                  const itemDeps = myDeps.filter((d) => d.depends_on_procurement_item_id);
+                  const waitingOn = [
+                    ...taskDeps
+                      .map((d) => taskById.get(d.depends_on_task_id))
+                      .filter((t) => t && t.status !== "complete")
+                      .map((t) => t!.title),
+                    ...itemDeps
+                      .map((d) => itemById.get(d.depends_on_procurement_item_id))
+                      .filter((i) => i && !isReceived(i.status))
+                      .map((i) => `${i!.description} (${ITEM_STATUS_LABELS[i!.status as ItemStatus]})`),
+                  ];
                   const candidates = taskList.filter(
-                    (t) => t.id !== task.id && !myDeps.some((d) => d.depends_on_task_id === t.id),
+                    (t) => t.id !== task.id && !taskDeps.some((d) => d.depends_on_task_id === t.id),
+                  );
+                  const itemCandidates = projectItems.filter(
+                    (i) => !itemDeps.some((d) => d.depends_on_procurement_item_id === i.id),
                   );
                   return (
                     <li key={task.id} id={`task-${task.id}`} className="space-y-2 p-4">
@@ -174,7 +234,7 @@ export default async function ProjectPage(props: PageProps<"/projects/[id]">) {
                       </div>
                       {waitingOn.length > 0 && task.status !== "complete" && (
                         <p className="text-xs text-amber-700">
-                          Waiting on: {waitingOn.map((t) => t!.title).join("; ")}
+                          Waiting on: {waitingOn.join("; ")}
                         </p>
                       )}
                       <div className="flex items-center gap-2">
@@ -233,12 +293,15 @@ export default async function ProjectPage(props: PageProps<"/projects/[id]">) {
                             ) : (
                               <ul className="space-y-1">
                                 {myDeps.map((d) => {
-                                  const dt = taskById.get(d.depends_on_task_id);
+                                  const dt = d.depends_on_task_id ? taskById.get(d.depends_on_task_id) : undefined;
+                                  const di = d.depends_on_procurement_item_id
+                                    ? itemById.get(d.depends_on_procurement_item_id)
+                                    : undefined;
                                   return (
                                     <li key={d.id} className="flex items-center justify-between gap-2">
                                       <span>
-                                        {dt?.title ?? "(deleted task)"}{" "}
-                                        {dt && <StatusBadge status={dt.status} />}
+                                        {di ? `📦 ${di.description}` : (dt?.title ?? "(deleted)")}{" "}
+                                        {di ? <ItemStatusBadge status={di.status} /> : dt && <StatusBadge status={dt.status} />}
                                       </span>
                                       <form action={removeDependency}>
                                         <input type="hidden" name="dependency_id" value={d.id} />
@@ -267,6 +330,23 @@ export default async function ProjectPage(props: PageProps<"/projects/[id]">) {
                               </form>
                             )}
                           </div>
+
+                          {itemCandidates.length > 0 && (
+                            <form action={addItemDependency} className="flex gap-2">
+                              <input type="hidden" name="task_id" value={task.id} />
+                              <select name="procurement_item_id" className={inputClass} defaultValue="">
+                                <option value="" disabled>
+                                  Waits for material…
+                                </option>
+                                {itemCandidates.map((i) => (
+                                  <option key={i.id} value={i.id}>
+                                    {i.description}
+                                  </option>
+                                ))}
+                              </select>
+                              <button className={secondaryButton}>Add</button>
+                            </form>
+                          )}
 
                           <form action={deleteTask}>
                             <input type="hidden" name="task_id" value={task.id} />
