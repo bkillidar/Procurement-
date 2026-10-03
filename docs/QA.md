@@ -182,3 +182,30 @@ Setup: use a project with some overdue tasks, a flagged material and a permit wi
 ### Project and portfolio dashboards
 - [ ] Project page opens with "Needs attention" pills (overdue tasks, flagged materials, permit delays, open issues, punch items) or a green "Nothing needs attention" message. Pills link to filtered lists.
 - [ ] Dashboard sections are consistent with the lists they link to.
+
+## Phase 8 — Production readiness
+
+### Errors, loading, empty and not-found states
+- [ ] Throttle the network (browser dev tools "Slow 3G") and open the Dashboard: grey placeholder blocks show while it loads.
+- [ ] Open a project, material, permit, issue or punch URL with a made-up id (change a character in the address): "Not found" with a link back, not a crash.
+- [ ] In Vercel, temporarily rename `SUPABASE_SECRET_KEY` and redeploy: the dashboard shows "One setup step left" instead of crashing. Restore and redeploy.
+- [ ] A brand-new database shows friendly empty states on every list (Projects, Procurement, Permits, Issues, Documents, Punch, Activity, Notifications) with a hint on what to do next.
+
+### Forms
+- [ ] Every form rejects an empty required field (browser prompt) and, if that is bypassed, shows a red message from the server (e.g. negative lead time, bad email, completion before start, empty title).
+- [ ] No form loses typed data silently: after an error you are returned to the same page with the message.
+
+### Demo, delete, cleanup
+- [ ] Projects → "Load a demo project": a "DEMO — 1420 Euclid St NW" project appears with flagged materials (one critical, others medium/high), a late shingle delivery, a partial drywall delivery with an issue, an overdue building-permit response and several notifications. Pressing the button again opens the same project instead of creating a second one.
+- [ ] Upload a photo to a punch item, then delete the item: the photo disappears from the Documents page (and the file is removed from Storage).
+- [ ] Project page → "Delete this project": typing the wrong name refuses; typing the exact name deletes everything, including its uploaded files, and returns to Projects.
+
+### Access password (optional)
+- [ ] With `APP_ACCESS_PASSWORD` set and redeployed: opening any page shows the password screen; a wrong password is refused after a short delay; the right one lets you in for 30 days and returns you to the page you wanted. "Lock" in the menu logs out.
+- [ ] While locked, `/api/health` still returns `{"ok":true}`; direct visits to `/projects`, `/issues` etc. redirect to the password screen.
+- [ ] Remove the variable and redeploy: the site is open again.
+
+### Security spot-checks
+- [ ] View the page source or network tab: the secret key never appears.
+- [ ] Supabase security advisor shows only the four RLS helper functions.
+- [ ] Supabase sign-ups are disabled.

@@ -7,6 +7,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { getContext } from "@/lib/org";
 import { logActivity } from "@/lib/activity";
 import { syncProject } from "@/lib/project-sync";
+import { purgeDocumentFiles } from "@/lib/storage-cleanup";
 import { PUNCH_STATUS_LABELS, PUNCH_TASK_TITLES, punchTaskStates, summarizePunch, type PunchStatus } from "@/lib/punch";
 import { firstError, punchSchema, PUNCH_STATUS_VALUES } from "@/lib/validation";
 
@@ -178,6 +179,7 @@ export async function deletePunchItem(formData: FormData) {
   try {
     const { db, orgId, item } = await loadPunch(id.data);
     projectId = item.project_id;
+    await purgeDocumentFiles(db, orgId, "punch_item_id", item.id);
     await db.from("punch_list_items").delete().eq("id", item.id).eq("organization_id", orgId);
     await syncPunchTasks(db, orgId, projectId);
   } catch (e) {

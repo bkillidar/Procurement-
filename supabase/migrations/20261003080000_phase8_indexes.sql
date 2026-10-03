@@ -1,0 +1,37 @@
+-- Indexes for the foreign keys and filters the app actually queries.
+-- (created_by / uploaded_by / verified_by / owner_id user references are not queried, so they stay unindexed.)
+create index if not exists documents_org_idx on public.documents(organization_id);
+create index if not exists documents_item_idx on public.documents(procurement_item_id);
+create index if not exists documents_delivery_idx on public.documents(delivery_id);
+create index if not exists documents_issue_idx on public.documents(issue_id);
+create index if not exists documents_permit_idx on public.documents(permit_id);
+create index if not exists documents_punch_idx on public.documents(punch_item_id);
+create index if not exists documents_task_idx on public.documents(task_id);
+create index if not exists follow_ups_permit_idx on public.follow_ups(permit_id);
+create index if not exists follow_ups_project_idx on public.follow_ups(project_id);
+create index if not exists follow_ups_task_idx on public.follow_ups(task_id);
+create index if not exists follow_ups_vendor_idx on public.follow_ups(vendor_id);
+create index if not exists follow_ups_contact_idx on public.follow_ups(contact_id);
+create index if not exists issues_item_idx on public.issues(procurement_item_id);
+create index if not exists issues_task_idx on public.issues(task_id);
+create index if not exists issues_delivery_idx on public.issues(delivery_id);
+create index if not exists issues_org_idx on public.issues(organization_id);
+create index if not exists task_deps_depends_task_idx on public.task_dependencies(depends_on_task_id);
+create index if not exists task_deps_depends_item_idx on public.task_dependencies(depends_on_procurement_item_id);
+create index if not exists task_deps_org_idx on public.task_dependencies(organization_id);
+create index if not exists tasks_phase_idx on public.tasks(phase_id);
+create index if not exists tasks_org_idx on public.tasks(organization_id);
+create index if not exists permits_contact_idx on public.permits_utilities(contact_id);
+create index if not exists permits_org_idx on public.permits_utilities(organization_id);
+create index if not exists punch_org_idx on public.punch_list_items(organization_id);
+create index if not exists punch_contact_idx on public.punch_list_items(assigned_contact_id);
+create index if not exists projects_phase_idx on public.projects(current_phase_id);
+create index if not exists quotes_vendor_idx on public.procurement_quotes(vendor_id);
+create index if not exists quotes_org_idx on public.procurement_quotes(organization_id);
+create index if not exists deliveries_org_idx on public.deliveries(organization_id);
+create index if not exists phases_org_idx on public.project_phases(organization_id);
+create index if not exists template_phases_tpl_idx on public.template_phases(template_id);
+create index if not exists template_tasks_tpl_idx on public.template_tasks(template_id);
+create index if not exists template_tasks_phase_idx on public.template_tasks(template_phase_id);
+create index if not exists templates_org_idx on public.project_templates(organization_id);
+create index if not exists notifications_project_idx on public.notifications(project_id);

@@ -6,6 +6,7 @@ import { loadItems } from "@/lib/procurement-queries";
 import { loadPermits } from "@/lib/permit-queries";
 import { permitRiskRank } from "@/lib/permits";
 import { addStandardPermits } from "@/app/actions/permits";
+import { deleteProject } from "@/app/actions/projects";
 import { summarizePunch } from "@/lib/punch";
 import { activityHref } from "@/lib/activity-links";
 import { isOpenIssue } from "@/lib/issues";
@@ -547,6 +548,21 @@ export default async function ProjectPage(props: PageProps<"/projects/[id]">) {
             <textarea id="description" name="description" rows={2} className={inputClass} />
           </div>
           <button className={primaryButton}>Add task</button>
+        </form>
+      </details>
+    
+      <details className={`${cardClass} p-4`}>
+        <summary className="cursor-pointer font-medium text-red-800">Delete this project</summary>
+        <form action={deleteProject} className="mt-3 space-y-3">
+          <input type="hidden" name="project_id" value={project.id} />
+          <p className="text-sm text-slate-700">
+            This permanently deletes the project with its tasks, materials, deliveries, permits, punch list, issues and uploaded files. It cannot be undone.
+            Type <strong>{project.name}</strong> to confirm.
+          </p>
+          <input name="confirm_name" required autoComplete="off" className={inputClass} aria-label="Type the project name to confirm" />
+          <ConfirmButton message={`Permanently delete “${project.name}” and everything in it?`} className={dangerButton}>
+            Delete project
+          </ConfirmButton>
         </form>
       </details>
     </div>
