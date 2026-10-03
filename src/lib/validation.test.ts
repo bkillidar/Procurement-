@@ -137,3 +137,17 @@ describe("permit schemas", () => {
     expect(permitFollowUpSchema.parse({ permit_id: id, method: "phone", next_follow_up_on: "2026-10-09" }).next_follow_up_on).toBe("2026-10-09");
   });
 });
+
+import { punchSchema } from "./validation";
+
+describe("punchSchema", () => {
+  const id = "6f1c1c0e-8c0a-4c36-9a53-0b8f3b0a1111";
+  it("needs only a description and defaults priority to medium", () => {
+    const r = punchSchema.parse({ project_id: id, description: "Touch up paint", location: "", assigned_contact_id: "" });
+    expect(r.priority).toBe("medium");
+    expect(r.location).toBeNull();
+    expect(r.assigned_contact_id).toBeNull();
+    expect(punchSchema.safeParse({ project_id: id, description: "  " }).success).toBe(false);
+    expect(punchSchema.safeParse({ project_id: id, description: "x", priority: "asap" }).success).toBe(false);
+  });
+});

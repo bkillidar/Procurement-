@@ -252,3 +252,16 @@ export const permitFollowUpSchema = z.object({
   responsible_label: text(100),
   notes: text(),
 });
+
+export const PUNCH_STATUS_VALUES = ["open", "in_progress", "ready_for_verification", "verified", "wont_fix"] as const;
+
+export const punchSchema = z.object({
+  project_id: uuid,
+  location: text(100),
+  description: requiredText("Description", 500),
+  priority: z.enum(PRIORITIES).default("medium"),
+  due_date: dateField,
+  assigned_contact_id: optionalUuid,
+  assigned_label: text(100),
+  notes: text(),
+});

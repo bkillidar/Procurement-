@@ -129,3 +129,30 @@ Setup: a project created from a DC or Maryland renovation template with a start 
 ### Lists and dashboard
 - [ ] Permits tabs (Needs attention / In progress / Approved / All) and search work.
 - [ ] Dashboard "Permits & utilities needing attention" and the "Permit / utility delays" tile match the flagged items; project page shows flagged items.
+
+## Phase 6 — Punch list (do this on a phone)
+
+Setup: a project in or near the Punch list phase. The template tasks "Create punch list" and "Complete punch list items" should exist (they are matched by title).
+
+### Fast entry
+- [ ] Project page → Punch list → "Start punch list". The Add item form is at the top; the room field suggests rooms (Kitchen, Primary bath…) and rooms already used.
+- [ ] Type a description only and tap "Add item": it appears under "No location" without leaving the page. Empty description is blocked.
+- [ ] Enter a room + description + priority and tap "Add + photos 📷": the item opens ready for photos.
+- [ ] Add 5 items in different rooms in under a minute without scrolling away from the form.
+
+### Photos
+- [ ] On an item, "Take or add photos" opens the camera/library; upload 2–3 photos. Thumbnails show on the item and (up to 4) on the list. Tapping a thumbnail opens it full size.
+
+### Assignment and status
+- [ ] Assign a subcontractor (contact) or type a name; the contact's phone is tappable on the item.
+- [ ] "Mark ready" moves it to Ready to verify and into the Verify tab. "✓ Verify" marks it Verified with today's date. The status dropdown saves on change.
+- [ ] Reopen a verified item: verified date clears.
+- [ ] Tabs (Open / Verify / Done / All) show counts; items are grouped by room, most urgent first; overdue dates are red.
+
+### Schedule link
+- [ ] Adding the first punch item completes "Create punch list" in the project's tasks.
+- [ ] "Complete punch list items" completes only when every item is Verified or Won't fix — not while any is open or Ready to verify. Adding a new open item reopens it (In progress).
+- [ ] When the Punch list phase tasks are all complete, the project advances to Completion.
+
+### Overview
+- [ ] Punch (top nav) lists projects with open / to verify / done counts; the dashboard tile "Open punch items" matches.

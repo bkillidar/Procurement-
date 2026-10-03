@@ -9,17 +9,26 @@ export function StatusSelect({
   value,
   options,
   className,
+  idName = "task_id",
+  hidden = {},
 }: {
   action: (formData: FormData) => void | Promise<void>;
   taskId: string;
   value: string;
   options: { value: string; label: string }[];
   className?: string;
+  /** Name of the id field the action reads (defaults to task_id). */
+  idName?: string;
+  /** Extra hidden fields, e.g. the page to return to. */
+  hidden?: Record<string, string>;
 }) {
   const formRef = useRef<HTMLFormElement>(null);
   return (
     <form ref={formRef} action={action}>
-      <input type="hidden" name="task_id" value={taskId} />
+      <input type="hidden" name={idName} value={taskId} />
+      {Object.entries(hidden).map(([k, v]) => (
+        <input key={k} type="hidden" name={k} value={v} />
+      ))}
       <select
         name="status"
         defaultValue={value}

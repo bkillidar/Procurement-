@@ -162,3 +162,21 @@ export function PermitStatusBadge({ status }: { status: string }) {
     </span>
   );
 }
+
+import { PUNCH_STATUS_LABELS, type PunchStatus } from "@/lib/punch";
+
+const PUNCH_STYLES: Record<PunchStatus, string> = {
+  open: "bg-slate-100 text-slate-700",
+  in_progress: "bg-indigo-100 text-indigo-800",
+  ready_for_verification: "bg-amber-100 text-amber-800",
+  verified: "bg-green-100 text-green-800",
+  wont_fix: "bg-slate-200 text-slate-600",
+};
+
+export function PunchStatusBadge({ status }: { status: string }) {
+  return (
+    <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${PUNCH_STYLES[status as PunchStatus] ?? PUNCH_STYLES.open}`}>
+      {PUNCH_STATUS_LABELS[status as PunchStatus] ?? status}
+    </span>
+  );
+}

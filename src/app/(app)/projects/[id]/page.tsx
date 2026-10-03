@@ -6,6 +6,7 @@ import { loadItems } from "@/lib/procurement-queries";
 import { loadPermits } from "@/lib/permit-queries";
 import { permitRiskRank } from "@/lib/permits";
 import { addStandardPermits } from "@/app/actions/permits";
+import { summarizePunch } from "@/lib/punch";
 import { ITEM_STATUS_LABELS, isReceived, riskRank, type ItemStatus } from "@/lib/procurement";
 import { dueState, formatDate, todayISO } from "@/lib/dates";
 import { TASK_STATUSES, TASK_STATUS_LABELS } from "@/lib/tasks";
@@ -77,6 +78,12 @@ export default async function ProjectPage(props: PageProps<"/projects/[id]">) {
     : { data: [] };
   const { items: projectItems } = await loadItems({ projectId: id });
   const itemById = new Map(projectItems.map((i) => [i.id, i]));
+  const { data: punchRows } = await db
+    .from("punch_list_items")
+    .select("status")
+    .eq("organization_id", orgId)
+    .eq("project_id", id);
+  const punch = summarizePunch(punchRows ?? []);
   const { permits: projectPermits } = await loadPermits({ projectId: id });
   const flaggedPermits = projectPermits
     .filter((p) => p.risk.level !== "none")
@@ -224,6 +231,21 @@ export default async function ProjectPage(props: PageProps<"/projects/[id]">) {
             ))}
           </ul>
         )}
+      </section>
+
+      <section className={`${cardClass} space-y-3 p-4`}>
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="font-medium">
+            Punch list{" "}
+            <span className="text-sm font-normal text-slate-500">
+              ({punch.total === 0 ? "none yet" : `${punch.open} open, ${punch.readyForVerification} to verify`})
+            </span>
+          </h2>
+          <Link href={`/projects/${project.id}/punch`} className={secondaryButton}>
+            {punch.total === 0 ? "Start punch list" : "Open"}
+          </Link>
+        </div>
+        {punch.total > 0 && <ProgressBar done={punch.done} total={punch.total} />}
       </section>
 
       {(phases ?? []).map((phase) => {
