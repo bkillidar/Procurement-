@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SubmitButton } from "@/components/submit-button";
 import { notFound } from "next/navigation";
 import { z } from "zod";
 import { getContext } from "@/lib/org";
@@ -215,7 +216,7 @@ export default async function ItemPage(props: PageProps<"/procurement/[id]">) {
                     <input type="date" name="expected_delivery_date" defaultValue={item.expected_delivery_date ?? ""} className={inputClass} />
                   </div>
                 </div>
-                <button className={primaryButton}>Mark as ordered</button>
+                <SubmitButton className={primaryButton}>Mark as ordered</SubmitButton>
               </form>
             </>
           ) : (
@@ -238,7 +239,7 @@ export default async function ItemPage(props: PageProps<"/procurement/[id]">) {
                   <label className={labelClass}>What did the vendor say?</label>
                   <input name="notes" className={inputClass} />
                 </div>
-                <button className={primaryButton}>Record confirmation</button>
+                <SubmitButton className={primaryButton}>Record confirmation</SubmitButton>
               </form>
             </>
           )}
@@ -298,7 +299,7 @@ export default async function ItemPage(props: PageProps<"/procurement/[id]">) {
               <label className={labelClass}>Notes</label>
               <textarea name="notes" rows={2} className={inputClass} />
             </div>
-            <button className={primaryButton}>Save delivery</button>
+            <SubmitButton className={primaryButton}>Save delivery</SubmitButton>
           </form>
         </section>
       )}
@@ -499,7 +500,7 @@ export default async function ItemPage(props: PageProps<"/procurement/[id]">) {
             <label className={labelClass}>Notes</label>
             <textarea name="notes" rows={2} className={inputClass} />
           </div>
-          <button className={primaryButton}>Log follow-up</button>
+          <SubmitButton className={primaryButton}>Log follow-up</SubmitButton>
         </form>
         {(followUps ?? []).length > 0 && (
           <ul className="divide-y divide-slate-100 border-t border-slate-100">

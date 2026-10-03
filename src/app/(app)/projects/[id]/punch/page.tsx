@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SubmitButton } from "@/components/submit-button";
 import { notFound } from "next/navigation";
 import { z } from "zod";
 import { getContext } from "@/lib/org";
@@ -138,10 +139,10 @@ export default async function PunchPage(props: PageProps<"/projects/[id]/punch">
           </div>
         </details>
         <div className="flex flex-wrap gap-2">
-          <button className={primaryButton}>Add item</button>
-          <button name="next" value="photos" className={secondaryButton}>
+          <SubmitButton className={primaryButton}>Add item</SubmitButton>
+          <SubmitButton name="next" value="photos" className={secondaryButton}>
             Add + photos 📷
-          </button>
+          </SubmitButton>
         </div>
       </form>
 

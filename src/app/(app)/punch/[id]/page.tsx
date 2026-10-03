@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SubmitButton } from "@/components/submit-button";
 import { notFound } from "next/navigation";
 import { z } from "zod";
 import { getContext } from "@/lib/org";
@@ -155,7 +156,7 @@ export default async function PunchItemPage(props: PageProps<"/punch/[id]">) {
             <label className={labelClass}>Notes</label>
             <textarea name="notes" rows={2} defaultValue={item.notes ?? ""} className={inputClass} />
           </div>
-          <button className={primaryButton}>Save</button>
+          <SubmitButton className={primaryButton}>Save</SubmitButton>
         </form>
         <form action={deletePunchItem} className="mt-4">
           <input type="hidden" name="punch_id" value={item.id} />

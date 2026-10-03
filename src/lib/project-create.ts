@@ -16,6 +16,8 @@ export interface NewProjectFields {
   start_date: string | null;
   target_completion_date: string | null;
   notes: string | null;
+  /** One-time id from the form; a repeat submit returns the project it already created. */
+  request_id?: string | null;
 }
 
 /**
@@ -60,7 +62,19 @@ export async function createProjectFromTemplate(
     .insert({ ...fields, organization_id: orgId, status: "active" })
     .select("id")
     .single();
-  if (projErr) throw new Error(projErr.message);
+  if (projErr) {
+    // Same form submitted twice (double tap / retry): hand back the project we already made.
+    if (projErr.code === "23505" && fields.request_id) {
+      const { data: existing } = await db
+        .from("projects")
+        .select("id")
+        .eq("organization_id", orgId)
+        .eq("request_id", fields.request_id)
+        .maybeSingle();
+      if (existing) return existing.id as string;
+    }
+    throw new Error(projErr.message);
+  }
   const projectId: string = project.id;
 
   try {

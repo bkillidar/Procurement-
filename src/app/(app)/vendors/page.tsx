@@ -1,3 +1,4 @@
+import { SubmitButton } from "@/components/submit-button";
 import { getContext } from "@/lib/org";
 import { addVendor, deleteVendor } from "@/app/actions/contacts";
 import { ConfirmButton } from "@/components/confirm-button";
@@ -115,7 +116,7 @@ export default async function VendorsPage(props: PageProps<"/vendors">) {
             </label>
             <textarea id="notes" name="notes" rows={2} className={inputClass} />
           </div>
-          <button className={primaryButton}>Add vendor</button>
+          <SubmitButton className={primaryButton}>Add vendor</SubmitButton>
         </form>
       </details>
     </div>

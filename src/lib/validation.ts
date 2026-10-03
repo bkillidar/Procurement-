@@ -49,6 +49,7 @@ export const projectSchema = z
     target_completion_date: dateField,
     notes: text(),
     template_id: optionalUuid,
+    request_id: optionalUuid,
   })
   .refine((p) => !p.start_date || !p.target_completion_date || p.target_completion_date >= p.start_date, {
     message: "Target completion must be on or after the start date",

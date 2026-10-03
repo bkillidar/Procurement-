@@ -1,3 +1,4 @@
+import { SubmitButton } from "@/components/submit-button";
 import { getContext } from "@/lib/org";
 import { addContact, deleteContact } from "@/app/actions/contacts";
 import { ConfirmButton } from "@/components/confirm-button";
@@ -155,7 +156,7 @@ export default async function ContactsPage(props: PageProps<"/contacts">) {
             </label>
             <textarea id="notes" name="notes" rows={2} className={inputClass} />
           </div>
-          <button className={primaryButton}>Add contact</button>
+          <SubmitButton className={primaryButton}>Add contact</SubmitButton>
         </form>
       </details>
     </div>

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SubmitButton } from "@/components/submit-button";
 import { notFound } from "next/navigation";
 import { z } from "zod";
 import { getContext } from "@/lib/org";
@@ -160,7 +161,7 @@ export default async function PermitPage(props: PageProps<"/permits/[id]">) {
             <label className={labelClass}>Notes</label>
             <textarea name="notes" rows={2} className={inputClass} />
           </div>
-          <button className={primaryButton}>Log follow-up</button>
+          <SubmitButton className={primaryButton}>Log follow-up</SubmitButton>
         </form>
         {(followUps ?? []).length > 0 && (
           <ul className="divide-y divide-slate-100 border-t border-slate-100">

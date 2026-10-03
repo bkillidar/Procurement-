@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SubmitButton } from "@/components/submit-button";
 import { createIssue } from "@/app/actions/issues";
 import { getContext } from "@/lib/org";
 import { ISSUE_TYPE_LABELS } from "@/lib/issues";
@@ -40,7 +41,7 @@ export default async function NewIssuePage(props: PageProps<"/issues/new">) {
               <option key={p.id} value={p.id}>{p.name}</option>
             ))}
           </select>
-          <button className={primaryButton}>Continue</button>
+          <SubmitButton className={primaryButton}>Continue</SubmitButton>
         </form>
       )}
       {selected && (
@@ -99,7 +100,7 @@ export default async function NewIssuePage(props: PageProps<"/issues/new">) {
             <label className={labelClass} htmlFor="description">Details</label>
             <textarea id="description" name="description" rows={3} className={inputClass} />
           </div>
-          <button className={`${primaryButton} w-full sm:w-auto`}>Open issue</button>
+          <SubmitButton className={`${primaryButton} w-full sm:w-auto`}>Open issue</SubmitButton>
         </form>
       )}
     </div>

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SubmitButton } from "@/components/submit-button";
 import { notFound } from "next/navigation";
 import { z } from "zod";
 import { getContext } from "@/lib/org";
@@ -547,7 +548,7 @@ export default async function ProjectPage(props: PageProps<"/projects/[id]">) {
             </label>
             <textarea id="description" name="description" rows={2} className={inputClass} />
           </div>
-          <button className={primaryButton}>Add task</button>
+          <SubmitButton className={primaryButton}>Add task</SubmitButton>
         </form>
       </details>
     
