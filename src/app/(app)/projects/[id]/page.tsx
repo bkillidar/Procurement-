@@ -3,6 +3,9 @@ import { notFound } from "next/navigation";
 import { z } from "zod";
 import { getContext } from "@/lib/org";
 import { loadItems } from "@/lib/procurement-queries";
+import { loadPermits } from "@/lib/permit-queries";
+import { permitRiskRank } from "@/lib/permits";
+import { addStandardPermits } from "@/app/actions/permits";
 import { ITEM_STATUS_LABELS, isReceived, riskRank, type ItemStatus } from "@/lib/procurement";
 import { dueState, formatDate, todayISO } from "@/lib/dates";
 import { TASK_STATUSES, TASK_STATUS_LABELS } from "@/lib/tasks";
@@ -26,6 +29,7 @@ import {
   inputClass,
   ItemStatusBadge,
   labelClass,
+  PermitStatusBadge,
   PriorityBadge,
   RiskBadge,
   primaryButton,
@@ -73,6 +77,10 @@ export default async function ProjectPage(props: PageProps<"/projects/[id]">) {
     : { data: [] };
   const { items: projectItems } = await loadItems({ projectId: id });
   const itemById = new Map(projectItems.map((i) => [i.id, i]));
+  const { permits: projectPermits } = await loadPermits({ projectId: id });
+  const flaggedPermits = projectPermits
+    .filter((p) => p.risk.level !== "none")
+    .sort((a, b) => permitRiskRank(b.risk.level) - permitRiskRank(a.risk.level));
   const atRisk = projectItems
     .filter((i) => i.risk.level !== "none")
     .sort((a, b) => riskRank(b.risk.level) - riskRank(a.risk.level));
@@ -175,6 +183,42 @@ export default async function ProjectPage(props: PageProps<"/projects/[id]">) {
                     <RiskBadge level={i.risk.level} />
                   </span>
                   <span className="block text-sm text-slate-600">{i.risk.risks[0]?.message}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section className={`${cardClass} space-y-3 p-4`}>
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="font-medium">
+            Permits &amp; utilities{" "}
+            <span className="text-sm font-normal text-slate-500">
+              ({projectPermits.length}
+              {flaggedPermits.length ? `, ${flaggedPermits.length} flagged` : ""})
+            </span>
+          </h2>
+          <Link href={`/permits/new?project=${project.id}`} className={secondaryButton}>
+            Add item
+          </Link>
+        </div>
+        {projectPermits.length === 0 ? (
+          <form action={addStandardPermits} className="space-y-2">
+            <input type="hidden" name="project_id" value={project.id} />
+            <p className="text-sm text-slate-500">Nothing tracked yet.</p>
+            <button className={secondaryButton}>Add standard items from this project&apos;s tasks</button>
+          </form>
+        ) : (
+          <ul className="divide-y divide-slate-100">
+            {(flaggedPermits.length ? flaggedPermits : projectPermits).slice(0, 6).map((p) => (
+              <li key={p.id} className="py-2">
+                <Link href={`/permits/${p.id}`} className="block space-y-1">
+                  <span className="flex items-center justify-between gap-2">
+                    <span className="font-medium">{p.item_type}</span>
+                    {p.risk.level !== "none" ? <RiskBadge level={p.risk.level} /> : <PermitStatusBadge status={p.status} />}
+                  </span>
+                  <span className="block text-sm text-slate-600">{p.risk.risks[0]?.message ?? p.agency ?? ""}</span>
                 </Link>
               </li>
             ))}

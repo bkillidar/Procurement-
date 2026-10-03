@@ -100,3 +100,32 @@ Setup: an item with quantity 32, status Ordered or later. **Uploads need `NEXT_P
 ### Documents
 - [ ] Documents page: pick project and type, upload; files appear under the right heading with links that open the file.
 - [ ] Filters by project, type and name work. Delete removes the file.
+
+## Phase 5 — Permits and utilities
+
+Setup: a project created from a DC or Maryland renovation template with a start date ~100 days ago (so permit tasks are near/overdue).
+
+### Add items
+- [ ] Project page → "Permits & utilities" → "Add standard items from this project's tasks": creates Building permit plus Utilities items (gas, water, temporary power) with agencies filled in and each linked to its schedule task. Pressing it again says nothing new to add.
+- [ ] Permits → Add item: pick a project, then a type (suggestions appear but any text works), agency, contact, linked task. Empty type is rejected.
+
+### Status and dates
+- [ ] Set status to Submitted: "Submitted on" fills with today if empty. Set Approved/Complete: "Approved / completed" fills in.
+- [ ] Building permit → Approved: its "Building permit approved" task becomes Complete and following tasks become Ready. Gas cap-off → Approved does NOT complete its task; → Complete does.
+- [ ] Move a completed permit back to Under review: the linked task goes to Waiting.
+
+### Delay detection
+- [ ] Submitted with a response date in the past: flagged "response was expected … (N days ago)".
+- [ ] Submitted 3+ weeks ago with no response date: flagged "no response date".
+- [ ] "Delayed" and "Additional information required" statuses are flagged.
+- [ ] Not started/Preparing with its linked task due within 14 days: flagged (medium → high within 7 days → critical when overdue).
+- [ ] Next follow-up date in the past: flagged. Approved/complete items are never flagged.
+
+### Follow-ups and documents
+- [ ] Log a follow-up with a next date: history shows it; "Last/Next follow-up" on the item update.
+- [ ] Contact with a phone number shows "Call …" on the permit.
+- [ ] Upload a PDF to a permit: it lists under Documents and also appears on the Documents page as "Permit documents".
+
+### Lists and dashboard
+- [ ] Permits tabs (Needs attention / In progress / Approved / All) and search work.
+- [ ] Dashboard "Permits & utilities needing attention" and the "Permit / utility delays" tile match the flagged items; project page shows flagged items.

@@ -119,3 +119,21 @@ describe("delivery and issue schemas", () => {
     expect(replacementSchema.safeParse({ item_id: id, quantity: "-4" }).success).toBe(false);
   });
 });
+
+import { permitFollowUpSchema, permitSchema } from "./validation";
+
+describe("permit schemas", () => {
+  const id = "6f1c1c0e-8c0a-4c36-9a53-0b8f3b0a1111";
+  it("requires a type and a valid status, and turns blanks into null", () => {
+    expect(permitSchema.safeParse({ project_id: id, item_type: "" }).success).toBe(false);
+    expect(permitSchema.safeParse({ project_id: id, item_type: "Gas cap-off", status: "maybe" }).success).toBe(false);
+    const r = permitSchema.parse({ project_id: id, item_type: "Gas cap-off", agency: "", submitted_on: "", contact_id: "" });
+    expect(r.status).toBe("not_started");
+    expect(r.agency).toBeNull();
+    expect(r.contact_id).toBeNull();
+  });
+  it("validates permit follow-ups", () => {
+    expect(permitFollowUpSchema.safeParse({ permit_id: id, method: "fax" }).success).toBe(false);
+    expect(permitFollowUpSchema.parse({ permit_id: id, method: "phone", next_follow_up_on: "2026-10-09" }).next_follow_up_on).toBe("2026-10-09");
+  });
+});
