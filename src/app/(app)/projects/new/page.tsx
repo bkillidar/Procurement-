@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { randomUUID } from "node:crypto";
+import { SubmitButton } from "@/components/submit-button";
 import { createProject } from "@/app/actions/projects";
 import { ensureDefaultTemplates, getContext } from "@/lib/org";
 import { cardClass, ErrorBanner, inputClass, labelClass, primaryButton } from "@/components/ui";
@@ -23,6 +25,7 @@ export default async function NewProjectPage(props: PageProps<"/projects/new">) 
       <h1 className="text-2xl font-semibold">New project</h1>
       <ErrorBanner message={typeof error === "string" ? error : undefined} />
       <form action={createProject} className={`${cardClass} space-y-4 p-4`}>
+        <input type="hidden" name="request_id" value={randomUUID()} />
         <div>
           <label className={labelClass} htmlFor="name">
             Project name *
@@ -105,7 +108,7 @@ export default async function NewProjectPage(props: PageProps<"/projects/new">) 
           </label>
           <textarea id="notes" name="notes" rows={2} className={inputClass} />
         </div>
-        <button className={`${primaryButton} w-full sm:w-auto`}>Create project</button>
+        <SubmitButton className={`${primaryButton} w-full sm:w-auto`}>Create project</SubmitButton>
       </form>
     </div>
   );

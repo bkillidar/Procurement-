@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SubmitButton } from "@/components/submit-button";
 import { createPermit } from "@/app/actions/permits";
 import { getContext } from "@/lib/org";
 import { PERMIT_STATUSES, PERMIT_STATUS_LABELS, PERMIT_TYPE_SUGGESTIONS } from "@/lib/permits";
@@ -34,7 +35,7 @@ export default async function NewPermitPage(props: PageProps<"/permits/new">) {
               <option key={p.id} value={p.id}>{p.name}</option>
             ))}
           </select>
-          <button className={primaryButton}>Continue</button>
+          <SubmitButton className={primaryButton}>Continue</SubmitButton>
         </form>
       ) : (
         <form action={createPermit} className={`${cardClass} space-y-4 p-4`}>
@@ -102,7 +103,7 @@ export default async function NewPermitPage(props: PageProps<"/permits/new">) {
             <textarea id="notes" name="notes" rows={2} className={inputClass} />
           </div>
           <p className="text-xs text-slate-500">When a linked item is complete (or an approved permit), its schedule task is completed automatically.</p>
-          <button className={`${primaryButton} w-full sm:w-auto`}>Add item</button>
+          <SubmitButton className={`${primaryButton} w-full sm:w-auto`}>Add item</SubmitButton>
         </form>
       )}
     </div>

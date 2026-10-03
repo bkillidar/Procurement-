@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SubmitButton } from "@/components/submit-button";
 import { notFound } from "next/navigation";
 import { z } from "zod";
 import { getContext } from "@/lib/org";
@@ -121,7 +122,7 @@ export default async function IssuePage(props: PageProps<"/issues/[id]">) {
           <label className={labelClass}>Resolution</label>
           <textarea name="resolution" rows={2} defaultValue={issue.resolution ?? ""} className={inputClass} placeholder="How was it resolved?" />
         </div>
-        <button className={primaryButton}>Save</button>
+        <SubmitButton className={primaryButton}>Save</SubmitButton>
       </form>
 
       <form action={deleteIssue}>

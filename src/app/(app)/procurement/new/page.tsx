@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SubmitButton } from "@/components/submit-button";
 import { createItem } from "@/app/actions/procurement";
 import { getContext } from "@/lib/org";
 import { cardClass, EmptyState, ErrorBanner, inputClass, labelClass, primaryButton } from "@/components/ui";
@@ -111,7 +112,7 @@ export default async function NewItemPage(props: PageProps<"/procurement/new">) 
           <label className={labelClass} htmlFor="notes">Notes</label>
           <textarea id="notes" name="notes" rows={2} className={inputClass} />
         </div>
-        <button className={`${primaryButton} w-full sm:w-auto`}>Add item</button>
+        <SubmitButton className={`${primaryButton} w-full sm:w-auto`}>Add item</SubmitButton>
       </form>
     </div>
   );
