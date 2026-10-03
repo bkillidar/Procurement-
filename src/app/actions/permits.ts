@@ -7,6 +7,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { getContext } from "@/lib/org";
 import { logActivity } from "@/lib/activity";
 import { syncProject } from "@/lib/project-sync";
+import { purgeDocumentFiles } from "@/lib/storage-cleanup";
 import { formatDate, todayISO } from "@/lib/dates";
 import {
   PERMIT_STATUS_LABELS,
@@ -270,6 +271,7 @@ export async function deletePermit(formData: FormData) {
   try {
     const ctx = await loadPermit(id.data);
     projectId = ctx.permit.project_id;
+    await purgeDocumentFiles(ctx.db, ctx.orgId, "permit_id", ctx.permit.id);
     await ctx.db.from("permits_utilities").delete().eq("id", ctx.permit.id).eq("organization_id", ctx.orgId);
     await logActivity(ctx.db, {
       orgId: ctx.orgId,

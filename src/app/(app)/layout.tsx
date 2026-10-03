@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Nav } from "@/components/nav";
 import { hasServerCredentials } from "@/lib/supabase/admin";
 import { loadNotifications } from "@/lib/notification-queries";
+import { lock } from "@/app/unlock/actions";
 
 async function unreadCount() {
   if (!hasServerCredentials()) return 0;
@@ -39,7 +40,16 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             )}
           </Link>
         </div>
-        <Nav />
+        <div className="flex items-center gap-2">
+          <div className="min-w-0 flex-1">
+            <Nav />
+          </div>
+          {process.env.APP_ACCESS_PASSWORD && (
+            <form action={lock} className="shrink-0 pb-2">
+              <button className="rounded-md px-3 py-2 text-sm text-slate-500 hover:bg-slate-100">Lock</button>
+            </form>
+          )}
+        </div>
       </header>
       <main className="mx-auto max-w-5xl p-4 pb-16">{children}</main>
     </div>

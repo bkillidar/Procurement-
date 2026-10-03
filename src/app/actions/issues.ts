@@ -6,6 +6,7 @@ import { z } from "zod";
 import { getContext } from "@/lib/org";
 import { logActivity } from "@/lib/activity";
 import { syncProject } from "@/lib/project-sync";
+import { purgeDocumentFiles } from "@/lib/storage-cleanup";
 import { statusAfterIssueResolved } from "@/lib/delivery";
 import { firstError, issueSchema, issueUpdateSchema } from "@/lib/validation";
 
@@ -155,6 +156,7 @@ export async function deleteIssue(formData: FormData) {
   if (!id.success) redirect("/issues");
   try {
     const { db, orgId } = await getContext();
+    await purgeDocumentFiles(db, orgId, "issue_id", id.data);
     await db.from("issues").delete().eq("id", id.data).eq("organization_id", orgId);
   } catch (e) {
     console.error("deleteIssue failed:", e);

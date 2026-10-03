@@ -9,7 +9,6 @@
 ```
 git clone https://github.com/bkillidar/Procurement-.git
 cd Procurement-
-git checkout claude/realestate-ops-platform-3yjchv
 npm install
 ```
 Expect: `added … packages`. If `npm install` errors, send me the last 20 lines.
@@ -24,13 +23,15 @@ Expect: `added … packages`. If `npm install` errors, send me the last 20 lines
 Create the file `.env.local` in the project root (it is git-ignored):
 ```
 NEXT_PUBLIC_SUPABASE_URL=<Project URL>
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<publishable key>
 SUPABASE_SECRET_KEY=<secret key>
 ```
+The publishable key (`sb_publishable_…`, same API Keys page) is public by design and is only used for photo/document uploads.
 
 ## 4. Create the database
-Option A (simplest): Supabase dashboard → **SQL Editor → New query** → paste the entire contents of `supabase/migrations/20261003000000_initial_schema.sql` → **Run**. Expect "Success. No rows returned".
-Option B (CLI, recommended once you are comfortable): `npx supabase login`, `npx supabase link --project-ref <ref>`, `npx supabase db push`.
-If you see an error, copy the full message to me; do not re-run partially.
+The database is built from the SQL files in `supabase/migrations`, which must run **in file-name order** (oldest first).
+Option A (CLI, recommended): `npx supabase login`, `npx supabase link --project-ref <ref>`, `npx supabase db push`.
+Option B (manual): Supabase dashboard → **SQL Editor → New query** → paste each file in order → **Run**. Each should say "Success". If one fails, stop and send me the full message rather than re-running pieces.
 
 ## 5. Run locally
 ```
@@ -38,11 +39,11 @@ npm run dev
 ```
 Open http://localhost:3000 → you land on the dashboard showing your company name (created automatically on first load). Then open http://localhost:3000/api/health → expect `{"ok":true}`. There is no login in V1; the database is only reachable through the server (Row Level Security stays on, so the public key can read nothing).
 
-Optional demo data: SQL Editor → paste `supabase/seed_demo.sql` → Run.
+Demo data: Projects → **Load a demo project** creates a realistic DC renovation with materials, deliveries, permits and an issue. Delete it (bottom of its project page) and the "(demo)" vendors when you are done.
 
 ## 6. Vercel deployment
 1. https://vercel.com → sign up with GitHub → **Add New → Project** → import `Procurement-`. Set **Production Branch** to `main` once code is merged there (preview deployments happen for any branch).
-2. **Environment Variables**: add `NEXT_PUBLIC_SUPABASE_URL` and `SUPABASE_SECRET_KEY` (same values as `.env.local`).
+2. **Environment Variables**: add `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (both as plain "Config" values) and `SUPABASE_SECRET_KEY` (as a Secret). Optional: `APP_ACCESS_PASSWORD` to lock the site. See DEPLOYMENT.md.
 3. **Deploy**. Expect a URL like `https://procurement-xxxx.vercel.app`.
 4. Visit the URL → check `/api/health` → `{"ok":true}`.
 
@@ -57,4 +58,6 @@ git add -A && git commit -m "Describe the change" && git push -u origin feature/
 | Variable | Local `.env.local` | Vercel | Secret? |
 |---|---|---|---|
 | NEXT_PUBLIC_SUPABASE_URL | yes | yes | no |
+| NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY | yes | yes | no (public; RLS gives it nothing) |
+| APP_ACCESS_PASSWORD | optional | optional | **YES – server-only** |
 | SUPABASE_SECRET_KEY | yes | yes | **YES – server-only, never NEXT_PUBLIC_, never in browser code** |

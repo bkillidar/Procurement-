@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { loadPortfolio } from "@/lib/queries";
+import { loadDemoProject } from "@/app/actions/demo";
+import { DEMO_PROJECT_PREFIX } from "@/lib/demo";
 import { formatDate } from "@/lib/dates";
 import { cardClass, EmptyState, primaryButton, ProgressBar } from "@/components/ui";
 
@@ -7,8 +9,11 @@ export const dynamic = "force-dynamic";
 
 const TYPE_LABEL: Record<string, string> = { renovation: "Renovation", new_construction: "New construction" };
 
-export default async function ProjectsPage() {
+export default async function ProjectsPage(props: PageProps<"/projects">) {
+  const sp = await props.searchParams;
+  const error = typeof sp.error === "string" ? sp.error : undefined;
   const { projects } = await loadPortfolio();
+  const hasDemo = projects.some((p) => p.name.startsWith(DEMO_PROJECT_PREFIX));
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -17,8 +22,19 @@ export default async function ProjectsPage() {
           New project
         </Link>
       </div>
+      {error && (
+        <p role="alert" className="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-800">
+          {error}
+        </p>
+      )}
       {projects.length === 0 ? (
-        <EmptyState>No projects yet. Tap “New project” to create one from a template.</EmptyState>
+        <EmptyState>
+          No projects yet. Tap “New project” to create one from a template, or{" "}
+          <form action={loadDemoProject} className="inline">
+            <button className="font-medium text-slate-900 underline">load a demo project</button>
+          </form>{" "}
+          to see how everything works.
+        </EmptyState>
       ) : (
         <ul className="space-y-3">
           {projects.map((p) => (
@@ -45,6 +61,11 @@ export default async function ProjectsPage() {
             </li>
           ))}
         </ul>
+      )}
+      {!hasDemo && projects.length > 0 && (
+        <form action={loadDemoProject}>
+          <button className="text-sm text-slate-500 underline">Load a demo project</button>
+        </form>
       )}
     </div>
   );

@@ -7,6 +7,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { getContext } from "@/lib/org";
 import { logActivity } from "@/lib/activity";
 import { syncProject } from "@/lib/project-sync";
+import { purgeDocumentFiles } from "@/lib/storage-cleanup";
 import { formatDate } from "@/lib/dates";
 import {
   ITEM_STATUSES,
@@ -423,6 +424,7 @@ export async function deleteItem(formData: FormData) {
   try {
     const { db, orgId, item } = await loadItem(id.data);
     projectId = item.project_id;
+    await purgeDocumentFiles(db, orgId, "procurement_item_id", item.id);
     const { error: e } = await db.from("procurement_items").delete().eq("id", item.id).eq("organization_id", orgId);
     if (e) throw new Error(e.message);
     await logActivity(db, {
