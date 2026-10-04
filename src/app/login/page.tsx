@@ -28,6 +28,9 @@ export default async function LoginPage(props: PageProps<"/login">) {
             autoFocus
             autoComplete="username"
             inputMode="email"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
             className="w-full rounded-md border border-slate-300 px-3 py-2 text-base"
           />
         </div>
@@ -41,6 +44,9 @@ export default async function LoginPage(props: PageProps<"/login">) {
             type="password"
             required
             autoComplete="current-password"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
             className="w-full rounded-md border border-slate-300 px-3 py-2 text-base"
           />
         </div>

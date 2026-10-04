@@ -204,7 +204,8 @@ Setup: use a project with some overdue tasks, a flagged material and a permit wi
 - [ ] Open the site in a private/incognito window: you land on the sign-in page and cannot reach any other page (try /projects, /issues).
 - [ ] A wrong password shows "That email or password isn't right"; the right one lands on the dashboard (or the page you were trying to open).
 - [ ] "Sign out" in the menu returns to the sign-in page, and the back button does not show data.
-- [ ] Both accounts (you and Faris) can sign in on their own phones at the same time.
+- [ ] Both accounts (you and Faris) can sign in on their own phones at the same time. A password pasted with a trailing space still works.
+- [ ] Menu → Account: changing the password with mismatched or too-short entries shows a message; a valid change shows "Password changed", and the new password works after signing out.
 - [ ] In Supabase, try Authentication → Users → Add user with an email that is NOT in `allowed_emails`: it is refused ("not allowed to create an account").
 - [ ] `/api/health` works signed out and returns only `{"ok":true}`.
 

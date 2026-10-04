@@ -266,3 +266,12 @@ export const punchSchema = z.object({
   assigned_label: text(100),
   notes: text(),
 });
+
+export const MIN_PASSWORD_LENGTH = 10;
+
+export const passwordChangeSchema = z
+  .object({
+    password: z.string().trim().min(MIN_PASSWORD_LENGTH, `Use at least ${MIN_PASSWORD_LENGTH} characters`).max(72, "Use 72 characters or fewer"),
+    confirm: z.string().trim(),
+  })
+  .refine((v) => v.password === v.confirm, { message: "The two passwords don't match", path: ["confirm"] });
