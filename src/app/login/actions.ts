@@ -7,7 +7,8 @@ import { safeNext } from "@/lib/safe-path";
 
 const credentials = z.object({
   email: z.string().trim().toLowerCase().email("Enter your email address"),
-  password: z.string().min(1, "Enter your password"),
+  // Trim: copying a password from a message often adds a trailing space on phones.
+  password: z.string().trim().min(1, "Enter your password"),
 });
 
 function back(next: string, error: string): never {
@@ -27,7 +28,7 @@ export async function signIn(formData: FormData) {
     if (error) {
       failed = true;
       // One generic message: never reveal whether the email exists.
-      message = "That email or password isn't right.";
+      message = "That email or password isn't right. Check the spelling (no capital letters or spaces) and try again.";
     }
   } catch (e) {
     failed = true;

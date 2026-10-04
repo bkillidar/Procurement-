@@ -151,3 +151,17 @@ describe("punchSchema", () => {
     expect(punchSchema.safeParse({ project_id: id, description: "x", priority: "asap" }).success).toBe(false);
   });
 });
+
+import { passwordChangeSchema } from "./validation";
+
+describe("passwordChangeSchema", () => {
+  it("needs a long enough password entered twice the same", () => {
+    expect(passwordChangeSchema.safeParse({ password: "short", confirm: "short" }).success).toBe(false);
+    expect(passwordChangeSchema.safeParse({ password: "a-long-enough-one", confirm: "a-long-enough-two" }).success).toBe(false);
+    expect(passwordChangeSchema.safeParse({ password: "a-long-enough-one", confirm: "a-long-enough-one" }).success).toBe(true);
+  });
+  it("ignores spaces added by copy and paste", () => {
+    const r = passwordChangeSchema.parse({ password: "  a-long-enough-one ", confirm: "a-long-enough-one" });
+    expect(r.password).toBe("a-long-enough-one");
+  });
+});

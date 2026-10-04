@@ -54,6 +54,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <div className="min-w-0 flex-1">
             <Nav />
           </div>
+          <Link href="/account" className="mb-2 shrink-0 whitespace-nowrap rounded-md px-3 py-2 text-sm text-slate-500 hover:bg-slate-100">
+            Account
+          </Link>
           <form action={signOut} className="shrink-0 pb-2">
             <button
               title={email ? `Signed in as ${email}` : undefined}

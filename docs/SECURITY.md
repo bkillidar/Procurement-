@@ -14,7 +14,7 @@ There are no sign-up screens by design. To add someone (needs the owner's access
 2. Supabase → Authentication → Users → **Add user → Create new user**: their email, a strong password, tick **Auto Confirm User**. They sign in at `/login` right away (no email is sent).
 
 To remove someone: Authentication → Users → delete the user, and delete their row from `allowed_emails`.
-To reset a password: Authentication → Users → the user → send a reset or set a new password.
+Each person can change their own password in the app (menu → **Account**). If someone forgets theirs, set a new one in Authentication → Users → the user.
 
 Roles are stored (`org_members.role`) and enforced by the database policies, but the app itself currently treats every signed-in member the same. Both V1 accounts are owners.
 
