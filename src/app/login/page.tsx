@@ -1,6 +1,7 @@
 import { signIn } from "./actions";
 import { safeNext } from "@/lib/safe-path";
 import { SubmitButton } from "@/components/submit-button";
+import { PasswordField } from "@/components/password-field";
 
 export const dynamic = "force-dynamic";
 
@@ -34,22 +35,7 @@ export default async function LoginPage(props: PageProps<"/login">) {
             className="w-full rounded-md border border-slate-300 px-3 py-2 text-base"
           />
         </div>
-        <div>
-          <label className="block text-sm font-medium text-slate-700" htmlFor="password">
-            Password
-          </label>
-          <input
-            id="password"
-            name="password"
-            type="password"
-            required
-            autoComplete="current-password"
-            autoCapitalize="none"
-            autoCorrect="off"
-            spellCheck={false}
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-base"
-          />
-        </div>
+        <PasswordField id="password" name="password" label="Password" autoComplete="current-password" />
         {error && (
           <p role="alert" className="text-sm text-red-700">
             {error}
